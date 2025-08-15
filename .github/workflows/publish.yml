@@ -28,6 +28,22 @@ jobs:
         VERSION=${GITHUB_REF#refs/tags/v}
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Extracted version: $VERSION"
+        
+        # Determine if this is a prerelease and set the NPM tag
+        if [[ $VERSION == *"-alpha"* ]]; then
+          NPM_TAG="alpha"
+        elif [[ $VERSION == *"-beta"* ]]; then
+          NPM_TAG="beta"
+        elif [[ $VERSION == *"-rc"* ]]; then
+          NPM_TAG="rc"
+        elif [[ $VERSION == *"-"* ]]; then
+          NPM_TAG="prerelease"
+        else
+          NPM_TAG="latest"
+        fi
+        
+        echo "npm_tag=$NPM_TAG" >> $GITHUB_OUTPUT
+        echo "NPM tag will be: $NPM_TAG"
 
     - name: Update package.json version
       run: |
@@ -53,6 +69,16 @@ jobs:
       run: npm run build
 
     - name: Publish to NPM with provenance
-      run: npm publish --access public --provenance
+      run: npm publish --access public --provenance --tag ${{ steps.version.outputs.npm_tag }}
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        
+    - name: Summary
+      run: |
+        echo "🎉 Successfully published @mlapaglia/ng20-rename@${{ steps.version.outputs.version }}"
+        echo "📦 NPM tag: ${{ steps.version.outputs.npm_tag }}"
+        if [ "${{ steps.version.outputs.npm_tag }}" != "latest" ]; then
+          echo "⚠️  This is a prerelease. Install with: npm install @mlapaglia/ng20-rename@${{ steps.version.outputs.npm_tag }}"
+        else
+          echo "✅ This is a stable release available as 'latest'"
+        fi
