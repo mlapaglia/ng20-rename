@@ -23,13 +23,13 @@ A TypeScript package to refactor Angular applications to use the latest **Angula
 ### Global Installation (Recommended)
 
 ```bash
-npm install -g ng20-rename
+npm install -g @mlapaglia/ng20-rename
 ```
 
 ### Local Installation
 
 ```bash
-npm install --save-dev ng20-rename
+npm install --save-dev @mlapaglia/ng20-rename
 ```
 
 ## Usage
