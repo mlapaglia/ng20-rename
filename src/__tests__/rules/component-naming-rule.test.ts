@@ -1,16 +1,11 @@
 import { ComponentNamingRule } from '../../rules/component-naming-rule';
-import { AngularFile, AngularFileType, RefactorOptions } from '../../types';
+import { AngularFile, AngularFileType } from '../../types';
 
 describe('ComponentNamingRule', () => {
   let rule: ComponentNamingRule;
-  let options: RefactorOptions;
 
   beforeEach(() => {
     rule = new ComponentNamingRule();
-    options = {
-      rootDir: '/test',
-      dryRun: true
-    };
   });
 
   describe('shouldApply', () => {

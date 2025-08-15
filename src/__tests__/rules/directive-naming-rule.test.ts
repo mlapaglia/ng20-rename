@@ -279,7 +279,7 @@ describe('DirectiveNamingRule', () => {
       // Access private method for testing
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const toCamelCase = (rule as any).toCamelCase;
-      
+
       expect(toCamelCase('my-test-string')).toBe('myTestString');
       expect(toCamelCase('my_test_string')).toBe('myTestString');
       expect(toCamelCase('my test string')).toBe('myTestString');
@@ -289,7 +289,7 @@ describe('DirectiveNamingRule', () => {
     it('should validate directive selectors', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const isValidDirectiveSelector = (rule as any).isValidDirectiveSelector;
-      
+
       expect(isValidDirectiveSelector('appHighlight')).toBe(true);
       expect(isValidDirectiveSelector('myAppHighlight')).toBe(false);
       expect(isValidDirectiveSelector('highlight')).toBe(false);
@@ -299,7 +299,7 @@ describe('DirectiveNamingRule', () => {
     it('should ensure app prefix', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const ensureAppPrefix = (rule as any).ensureAppPrefix;
-      
+
       expect(ensureAppPrefix('highlight')).toBe('appHighlight');
       expect(ensureAppPrefix('appHighlight')).toBe('appHighlight');
       expect(ensureAppPrefix('myHighlight')).toBe('appMyHighlight');

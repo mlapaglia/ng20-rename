@@ -51,4 +51,3 @@ describe('index exports', () => {
     expect(result).toBeDefined();
   });
 });
-

@@ -1,17 +1,12 @@
 import { FileNamingRule } from '../../rules/file-naming-rule';
-import { AngularFile, AngularFileType, RefactorOptions } from '../../types';
+import { AngularFile, AngularFileType } from '../../types';
 import * as path from 'path';
 
 describe('FileNamingRule', () => {
   let rule: FileNamingRule;
-  let options: RefactorOptions;
 
   beforeEach(() => {
     rule = new FileNamingRule();
-    options = {
-      rootDir: '/test',
-      dryRun: true
-    };
   });
 
   describe('shouldApply', () => {

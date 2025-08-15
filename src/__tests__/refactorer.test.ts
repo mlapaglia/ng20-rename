@@ -314,9 +314,9 @@ describe('AngularRefactorer', () => {
       const result = await refactorer.refactor();
 
       expect(result.contentChanges.length).toBeGreaterThan(0);
-      expect(result.contentChanges.some(change => 
-        change.reason.includes('Component selector should use kebab-case')
-      )).toBe(true);
+      expect(
+        result.contentChanges.some(change => change.reason.includes('Component selector should use kebab-case'))
+      ).toBe(true);
     });
 
     it('should track file renames', async () => {
@@ -342,7 +342,7 @@ describe('AngularRefactorer', () => {
     it('should handle non-existent files gracefully', async () => {
       // Create a scenario where glob finds a file but it doesn't exist when we try to read it
       const mockGlob = jest.fn().mockResolvedValue([join(tempDir, 'nonexistent.ts')]);
-      
+
       // Mock glob to return non-existent file
       jest.doMock('glob', () => ({
         glob: mockGlob
@@ -362,12 +362,7 @@ describe('AngularRefactorer', () => {
 
       // Access private method for testing
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const changes = (refactorer as any).getContentChanges(
-        'test.ts',
-        oldContent,
-        newContent,
-        'Test change'
-      );
+      const changes = (refactorer as any).getContentChanges('test.ts', oldContent, newContent, 'Test change');
 
       expect(changes).toHaveLength(1);
       expect(changes[0].line).toBe(2);
@@ -381,12 +376,7 @@ describe('AngularRefactorer', () => {
       const newContent = 'line 1\nline 2\nline 3';
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const changes = (refactorer as any).getContentChanges(
-        'test.ts',
-        oldContent,
-        newContent,
-        'Added line'
-      );
+      const changes = (refactorer as any).getContentChanges('test.ts', oldContent, newContent, 'Added line');
 
       expect(changes).toHaveLength(1);
       expect(changes[0].line).toBe(3);
@@ -399,12 +389,7 @@ describe('AngularRefactorer', () => {
       const newContent = 'line 1\nline 3';
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const changes = (refactorer as any).getContentChanges(
-        'test.ts',
-        oldContent,
-        newContent,
-        'Removed line'
-      );
+      const changes = (refactorer as any).getContentChanges('test.ts', oldContent, newContent, 'Removed line');
 
       expect(changes).toHaveLength(2);
       expect(changes[0].line).toBe(2);
