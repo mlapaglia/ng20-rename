@@ -17,6 +17,7 @@ export class AngularRefactorer {
       exclude: ['node_modules/**', 'dist/**', '**/*.spec.ts'],
       dryRun: false,
       verbose: false,
+      smartServices: true,
       ...options
     };
 
@@ -24,7 +25,11 @@ export class AngularRefactorer {
   }
 
   private initializeRules(): void {
-    this.rules = [new FileNamingRule(), new ComponentNamingRule(), new DirectiveNamingRule()];
+    this.rules = [
+      new FileNamingRule(this.options.smartServices), 
+      new ComponentNamingRule(), 
+      new DirectiveNamingRule()
+    ];
   }
 
   async refactor(): Promise<RefactorResult> {

@@ -9,6 +9,8 @@ export interface RefactorOptions {
   dryRun?: boolean;
   /** Whether to show verbose output */
   verbose?: boolean;
+  /** Whether to use smart domain detection for services (default: true) */
+  smartServices?: boolean;
 }
 
 export interface RefactorResult {
