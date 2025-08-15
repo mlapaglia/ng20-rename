@@ -3,14 +3,16 @@ import { RenameRule, RuleResult } from './base-rule';
 import { AngularFile, AngularFileType } from '../types';
 
 /**
- * Rule to ensure file names follow Angular style guide conventions:
- * - Separate words with hyphens
+ * Rule to ensure file names follow Angular 20 naming conventions:
+ * - Clean and concise file names without redundant suffixes
+ * - No suffixes for components, directives, and services
+ * - Hyphenated suffixes for pipes, modules, guards, interceptors, and resolvers
  * - Use kebab-case for all file names
  * - Match file names to TypeScript identifiers within
  */
 export class FileNamingRule extends RenameRule {
   readonly name = 'file-naming';
-  readonly description = 'Ensures file names follow Angular naming conventions with kebab-case';
+  readonly description = 'Ensures file names follow Angular 20 naming conventions: clean, concise, kebab-case';
 
   shouldApply(file: AngularFile): boolean {
     // Don't apply to spec files or stylesheets as they have different conventions
@@ -83,7 +85,8 @@ export class FileNamingRule extends RenameRule {
   }
 
   private removeTypeSuffix(fileName: string, fileType: AngularFileType): string {
-    const suffixes: Partial<Record<AngularFileType, string>> = {
+    // Handle both old Angular naming and new Angular 20 naming
+    const oldSuffixes: Partial<Record<AngularFileType, string>> = {
       [AngularFileType.COMPONENT]: '.component',
       [AngularFileType.SERVICE]: '.service',
       [AngularFileType.DIRECTIVE]: '.directive',
@@ -94,24 +97,43 @@ export class FileNamingRule extends RenameRule {
       [AngularFileType.RESOLVER]: '.resolver'
     };
 
-    const suffix = suffixes[fileType];
-    if (suffix && fileName.endsWith(suffix)) {
-      return fileName.slice(0, -suffix.length);
+    const newSuffixes: Partial<Record<AngularFileType, string>> = {
+      [AngularFileType.PIPE]: '-pipe',
+      [AngularFileType.MODULE]: '-module',
+      [AngularFileType.GUARD]: '-guard',
+      [AngularFileType.INTERCEPTOR]: '-interceptor',
+      [AngularFileType.RESOLVER]: '-resolver'
+    };
+
+    // Try old suffix first (for migration from old to new)
+    const oldSuffix = oldSuffixes[fileType];
+    if (oldSuffix && fileName.endsWith(oldSuffix)) {
+      return fileName.slice(0, -oldSuffix.length);
+    }
+
+    // Try new suffix
+    const newSuffix = newSuffixes[fileType];
+    if (newSuffix && fileName.endsWith(newSuffix)) {
+      return fileName.slice(0, -newSuffix.length);
     }
 
     return fileName;
   }
 
   private getTypeSuffix(fileType: AngularFileType): string {
+    // Angular 20 naming conventions: Clean and concise file names
     const suffixes: Record<AngularFileType, string> = {
-      [AngularFileType.COMPONENT]: '.component',
-      [AngularFileType.SERVICE]: '.service',
-      [AngularFileType.DIRECTIVE]: '.directive',
-      [AngularFileType.PIPE]: '.pipe',
-      [AngularFileType.MODULE]: '.module',
-      [AngularFileType.GUARD]: '.guard',
-      [AngularFileType.INTERCEPTOR]: '.interceptor',
-      [AngularFileType.RESOLVER]: '.resolver',
+      // No suffixes for components, directives, and services (Angular 20)
+      [AngularFileType.COMPONENT]: '',
+      [AngularFileType.SERVICE]: '',
+      [AngularFileType.DIRECTIVE]: '',
+
+      // Hyphenated suffixes for other types (Angular 20)
+      [AngularFileType.PIPE]: '-pipe',
+      [AngularFileType.MODULE]: '-module',
+      [AngularFileType.GUARD]: '-guard',
+      [AngularFileType.INTERCEPTOR]: '-interceptor',
+      [AngularFileType.RESOLVER]: '-resolver',
       [AngularFileType.SPEC]: '.spec',
       [AngularFileType.HTML_TEMPLATE]: '',
       [AngularFileType.STYLESHEET]: '',

@@ -1,5 +1,5 @@
 {
-  "name": "ng20-rename",
+  "name": "@mlapaglia/ng20-rename",
   "version": "1.0.0",
   "description": "A TypeScript package to refactor Angular applications to use the latest Angular naming conventions",
   "main": "dist/index.js",
@@ -33,7 +33,7 @@
     "typescript",
     "cli"
   ],
-  "author": "Your Name",
+  "author": "Matt LaPaglia",
   "license": "MIT",
   "repository": {
     "type": "git",

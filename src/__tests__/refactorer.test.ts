@@ -336,7 +336,7 @@ describe('AngularRefactorer', () => {
 
       expect(result.renamedFiles.length).toBeGreaterThan(0);
       expect(result.renamedFiles[0].oldPath).toContain('TestComponent.ts');
-      expect(result.renamedFiles[0].newPath).toContain('test.component.ts');
+      expect(result.renamedFiles[0].newPath).toContain('test.ts');
     });
 
     it('should handle non-existent files gracefully', async () => {

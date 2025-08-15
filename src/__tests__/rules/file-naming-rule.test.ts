@@ -32,7 +32,7 @@ describe('FileNamingRule', () => {
   });
 
   describe('apply', () => {
-    it('should rename PascalCase component file to kebab-case', async () => {
+    it('should rename PascalCase component file to kebab-case without .component suffix (Angular 20)', async () => {
       const file: AngularFile = {
         path: '/test/UserProfile.component.ts',
         content: 'export class UserProfileComponent {}',
@@ -41,13 +41,13 @@ describe('FileNamingRule', () => {
 
       const result = await rule.apply(file);
 
-      expect(result.newFileName).toBe('/test/user-profile.component.ts'.replace(/\//g, path.sep));
+      expect(result.newFileName).toBe('/test/user-profile.ts'.replace(/\//g, path.sep));
       expect(result.reason).toContain('File name should use kebab-case');
     });
 
-    it('should not rename correctly named files', async () => {
+    it('should not rename correctly named files (Angular 20)', async () => {
       const file: AngularFile = {
-        path: '/test/user-profile.component.ts',
+        path: '/test/user-profile.ts',
         content: 'export class UserProfileComponent {}',
         type: AngularFileType.COMPONENT
       };
@@ -57,7 +57,7 @@ describe('FileNamingRule', () => {
       expect(result.newFileName).toBeUndefined();
     });
 
-    it('should handle service files', async () => {
+    it('should handle service files (Angular 20 - no .service suffix)', async () => {
       const file: AngularFile = {
         path: '/test/UserDataService.ts',
         content: 'export class UserDataService {}',
@@ -66,7 +66,7 @@ describe('FileNamingRule', () => {
 
       const result = await rule.apply(file);
 
-      expect(result.newFileName).toBe('/test/user-data.service.ts'.replace(/\//g, path.sep));
+      expect(result.newFileName).toBe('/test/user-data.ts'.replace(/\//g, path.sep));
     });
 
     it('should handle files without class exports', async () => {

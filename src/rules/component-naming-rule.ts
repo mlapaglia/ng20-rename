@@ -2,10 +2,10 @@ import { RenameRule, RuleResult } from './base-rule';
 import { AngularFile, AngularFileType } from '../types';
 
 /**
- * Rule to ensure Angular components follow naming conventions:
+ * Rule to ensure Angular components follow Angular 20 naming conventions:
  * - Component selectors should use kebab-case with application prefix
  * - Component class names should use PascalCase with 'Component' suffix
- * - Template and style file names should match component name
+ * - Template and style file names should match Angular 20 conventions (no .component suffix)
  */
 export class ComponentNamingRule extends RenameRule {
   readonly name = 'component-naming';
@@ -164,7 +164,8 @@ export class ComponentNamingRule extends RenameRule {
 
     const baseName = className.replace(/Component$/, '');
     const kebabName = this.toKebabCase(baseName);
-    return `./${kebabName}.component.html`;
+    // Angular 20: No .component suffix in file names
+    return `./${kebabName}.html`;
   }
 
   private getExpectedStyleUrls(content: string): string | null {
@@ -173,7 +174,8 @@ export class ComponentNamingRule extends RenameRule {
 
     const baseName = className.replace(/Component$/, '');
     const kebabName = this.toKebabCase(baseName);
-    return `'./${kebabName}.component.css'`;
+    // Angular 20: No .component suffix in file names
+    return `'./${kebabName}.css'`;
   }
 
   private isValidComponentSelector(selector: string): boolean {

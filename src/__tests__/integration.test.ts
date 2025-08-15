@@ -271,8 +271,8 @@ $secondary-color: #6c757d;
   }
 
   function verifyComponentTransformations() {
-    // Check that component file was renamed (based on actual output)
-    const expectedFileName = join(tempDir, 'user-profile.component.ts');
+    // Check that component file was renamed to Angular 20 naming (no .component suffix)
+    const expectedFileName = join(tempDir, 'user-profile.ts');
     expect(readFileSync(expectedFileName, 'utf-8')).toBeDefined();
 
     const content = readFileSync(expectedFileName, 'utf-8');
@@ -289,7 +289,7 @@ $secondary-color: #6c757d;
   }
 
   function verifyServiceTransformations() {
-    const expectedFileName = join(tempDir, 'data.service.ts');
+    const expectedFileName = join(tempDir, 'data.ts');
     expect(readFileSync(expectedFileName, 'utf-8')).toBeDefined();
 
     const content = readFileSync(expectedFileName, 'utf-8');
@@ -297,7 +297,7 @@ $secondary-color: #6c757d;
   }
 
   function verifyDirectiveTransformations() {
-    const expectedFileName = join(tempDir, 'highlight.directive.ts');
+    const expectedFileName = join(tempDir, 'highlight.ts');
     expect(readFileSync(expectedFileName, 'utf-8')).toBeDefined();
 
     const content = readFileSync(expectedFileName, 'utf-8');
@@ -306,7 +306,7 @@ $secondary-color: #6c757d;
   }
 
   function verifyPipeTransformations() {
-    const expectedFileName = join(tempDir, 'custom.pipe.ts');
+    const expectedFileName = join(tempDir, 'custom-pipe.ts');
     expect(readFileSync(expectedFileName, 'utf-8')).toBeDefined();
 
     const content = readFileSync(expectedFileName, 'utf-8');
@@ -315,7 +315,7 @@ $secondary-color: #6c757d;
   }
 
   function verifyModuleTransformations() {
-    const expectedFileName = join(tempDir, 'app.module.ts');
+    const expectedFileName = join(tempDir, 'app-module.ts');
     expect(readFileSync(expectedFileName, 'utf-8')).toBeDefined();
 
     const content = readFileSync(expectedFileName, 'utf-8');
@@ -323,7 +323,7 @@ $secondary-color: #6c757d;
   }
 
   function verifyGuardTransformations() {
-    const expectedFileName = join(tempDir, 'auth-guard.service.ts');
+    const expectedFileName = join(tempDir, 'auth-guard.ts');
     expect(readFileSync(expectedFileName, 'utf-8')).toBeDefined();
 
     const content = readFileSync(expectedFileName, 'utf-8');
@@ -331,7 +331,7 @@ $secondary-color: #6c757d;
   }
 
   function verifyInterceptorTransformations() {
-    const expectedFileName = join(tempDir, 'auth-interceptor.service.ts');
+    const expectedFileName = join(tempDir, 'auth-interceptor.ts');
     expect(readFileSync(expectedFileName, 'utf-8')).toBeDefined();
 
     const content = readFileSync(expectedFileName, 'utf-8');
@@ -339,7 +339,7 @@ $secondary-color: #6c757d;
   }
 
   function verifyResolverTransformations() {
-    const expectedFileName = join(tempDir, 'data-resolver.service.ts');
+    const expectedFileName = join(tempDir, 'data-resolver.ts');
     expect(readFileSync(expectedFileName, 'utf-8')).toBeDefined();
 
     const content = readFileSync(expectedFileName, 'utf-8');
@@ -347,19 +347,19 @@ $secondary-color: #6c757d;
   }
 
   function verifyFileNaming() {
-    // Verify all files follow the actual naming conventions used by the rules
+    // Verify all files follow Angular 20 naming conventions
     const expectedFiles = [
-      'user-profile.component.ts',
+      'user-profile.ts',
       'UserProfile.component.html',
       'UserProfile.component.css',
       'UserProfile.component.spec.ts',
-      'data.service.ts',
-      'highlight.directive.ts',
-      'custom.pipe.ts',
-      'app.module.ts',
-      'auth-guard.service.ts',
-      'auth-interceptor.service.ts',
-      'data-resolver.service.ts',
+      'data.ts',
+      'highlight.ts',
+      'custom-pipe.ts',
+      'app-module.ts',
+      'auth-guard.ts',
+      'auth-interceptor.ts',
+      'data-resolver.ts',
       'Styles.scss'
     ];
 

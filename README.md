@@ -1,6 +1,6 @@
 # ng20-rename
 
-A TypeScript package to refactor Angular applications to use the latest Angular naming conventions based on the [official Angular Style Guide](https://angular.dev/style-guide).
+A TypeScript package to refactor Angular applications to use the latest **Angular 20** naming conventions with clean, concise file names that remove redundant suffixes.
 
 [![CI](https://github.com/mlapaglia/ng20-rename/actions/workflows/ci.yml/badge.svg)](https://github.com/mlapaglia/ng20-rename/actions/workflows/ci.yml)
 [![npm version](https://badge.fury.io/js/ng20-rename.svg)](https://badge.fury.io/js/ng20-rename)
@@ -8,11 +8,13 @@ A TypeScript package to refactor Angular applications to use the latest Angular 
 
 ## Features
 
-- 🔄 **File Naming**: Converts file names to kebab-case with proper Angular suffixes
+✨ **Angular 20 Ready**: Implements the latest Angular 20 naming conventions with clean, concise file names
+
+- 🔄 **Modern File Naming**: Clean file names without redundant suffixes (components, services, directives)
 - 🏷️ **Component Selectors**: Ensures component selectors use kebab-case with app prefix
 - 📝 **Class Names**: Validates and fixes class names to use PascalCase with proper suffixes
 - 🎯 **Directive Selectors**: Ensures directive selectors use camelCase with app prefix
-- 🔍 **Template & Style URLs**: Updates template and style URLs to match component names
+- 🔍 **Template & Style URLs**: Updates URLs to match Angular 20 file naming (no `.component` suffix)
 - 🧪 **Dry Run Mode**: Preview changes before applying them
 - 📊 **Detailed Reporting**: Shows exactly what will be changed and why
 
@@ -79,51 +81,95 @@ console.log(`Content changes: ${result.contentChanges.length}`);
 | `-i, --include <patterns...>` | File patterns to include | `["**/*.ts", "**/*.html", "**/*.css", "**/*.scss"]` |
 | `-e, --exclude <patterns...>` | File patterns to exclude | `["node_modules/**", "dist/**", "**/*.spec.ts"]` |
 
-## Naming Conventions Applied
+## Angular 20 Naming Conventions Applied
 
-### File Naming
+### 🎯 New File Naming Rules
 
-✅ **Before**: `UserProfile.component.ts`, `userService.ts`  
-✅ **After**: `user-profile.component.ts`, `user.service.ts`
+Angular 20 introduces **clean and concise** file names by removing redundant suffixes:
 
-- Converts PascalCase and camelCase to kebab-case
-- Ensures proper Angular file suffixes (`.component.ts`, `.service.ts`, etc.)
-- Matches file names to TypeScript class names
+✅ **Components, Services & Directives**: No suffixes needed  
+✅ **Other Types**: Hyphenated suffixes for clarity
 
-### Component Conventions
+| File Type | Before (Old Angular) | After (Angular 20) |
+|-----------|---------------------|-------------------|
+| **Components** | `user-profile.component.ts` | `user-profile.ts` |
+| **Services** | `auth.service.ts` | `auth.ts` or `auth-store.ts` |
+| **Directives** | `highlight.directive.ts` | `highlight.ts` |
+| **Pipes** | `currency.pipe.ts` | `currency-pipe.ts` |
+| **Modules** | `shared.module.ts` | `shared-module.ts` |
+| **Guards** | `auth.guard.ts` | `auth-guard.ts` |
+| **Interceptors** | `auth.interceptor.ts` | `auth-interceptor.ts` |
+| **Resolvers** | `data.resolver.ts` | `data-resolver.ts` |
 
-✅ **Before**:
+### Key Benefits:
+- 📦 **Cleaner file structure** with less redundancy
+- 🚀 **Faster navigation** in IDEs and file explorers  
+- 🎯 **Modern Angular practices** following latest conventions
+
+### Component Conventions (Angular 20)
+
+✅ **Before** (Old Angular):
 ```typescript
+// File: user-profile.component.ts
 @Component({
   selector: 'userProfile',
-  templateUrl: './UserProfile.html',
-  styleUrls: ['./UserProfile.css']
+  templateUrl: './UserProfile.component.html',
+  styleUrls: ['./UserProfile.component.css']
 })
 export class userProfile { }
 ```
 
-✅ **After**:
-```typescript
+✅ **After** (Angular 20):
+```typescript  
+// File: user-profile.ts (no .component suffix!)
 @Component({
   selector: 'app-user-profile',
-  templateUrl: './user-profile.component.html',
-  styleUrls: ['./user-profile.component.css']
+  templateUrl: './user-profile.html',      // No .component in URL
+  styleUrls: ['./user-profile.css']       // No .component in URL
 })
 export class UserProfileComponent { }
 ```
 
-### Directive Conventions
+**Key Changes:**
+- 📁 **File name**: `user-profile.component.ts` → `user-profile.ts`
+- 🔗 **Template URL**: `./user-profile.component.html` → `./user-profile.html`
+- 🎨 **Style URL**: `./user-profile.component.css` → `./user-profile.css`
 
-✅ **Before**:
+### Service Conventions (Angular 20)
+
+✅ **Before** (Old Angular):
 ```typescript
+// File: auth.service.ts
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthService { }
+```
+
+✅ **After** (Angular 20):
+```typescript
+// File: auth.ts (no .service suffix!)
+// OR: auth-store.ts, auth-api.ts (domain-specific names)
+@Injectable({
+  providedIn: 'root'  
+})
+export class AuthService { }
+```
+
+### Directive Conventions (Angular 20)
+
+✅ **Before** (Old Angular):
+```typescript
+// File: highlight.directive.ts
 @Directive({
   selector: '[highlight]'
 })
 export class highlight { }
 ```
 
-✅ **After**:
+✅ **After** (Angular 20):
 ```typescript
+// File: highlight.ts (no .directive suffix!)
 @Directive({
   selector: '[appHighlight]'
 })
@@ -132,14 +178,19 @@ export class HighlightDirective { }
 
 ## Supported Angular File Types
 
-- 🔸 **Components** (`.component.ts`)
-- 🔸 **Services** (`.service.ts`)
-- 🔸 **Directives** (`.directive.ts`)
-- 🔸 **Pipes** (`.pipe.ts`)
-- 🔸 **Modules** (`.module.ts`)
-- 🔸 **Guards** (`.guard.ts`)
-- 🔸 **Interceptors** (`.interceptor.ts`)
-- 🔸 **Resolvers** (`.resolver.ts`)
+### 🎯 Angular 20 Clean Naming:
+- 🔸 **Components** (`.ts` - no suffix!)
+- 🔸 **Services** (`.ts` - no suffix!)  
+- 🔸 **Directives** (`.ts` - no suffix!)
+
+### 🔗 Hyphenated Suffixes:
+- 🔸 **Pipes** (`-pipe.ts`)
+- 🔸 **Modules** (`-module.ts`)
+- 🔸 **Guards** (`-guard.ts`)
+- 🔸 **Interceptors** (`-interceptor.ts`)
+- 🔸 **Resolvers** (`-resolver.ts`)
+
+### 📄 Assets:
 - 🔸 **Templates** (`.html`)
 - 🔸 **Stylesheets** (`.css`, `.scss`, `.sass`)
 
@@ -156,19 +207,29 @@ Exclude patterns: node_modules/**, dist/**, **/*.spec.ts
 
 === Refactoring Results ===
 Files processed: 15
-Files renamed: 3
-Content changes: 7
+Files renamed: 8
+Content changes: 12
 Errors: 0
 
 --- File Renames ---
-/project/src/app/UserProfile.component.ts -> /project/src/app/user-profile.component.ts
-  Reason: File name should use kebab-case: UserProfile.component.ts -> user-profile.component.ts
+/project/src/app/user-profile.component.ts -> /project/src/app/user-profile.ts
+  Reason: Angular 20 clean naming: remove .component suffix
+/project/src/app/auth.service.ts -> /project/src/app/auth.ts  
+  Reason: Angular 20 clean naming: remove .service suffix
+/project/src/app/shared.module.ts -> /project/src/app/shared-module.ts
+  Reason: Angular 20 hyphenated suffix for modules
 
 --- Content Changes ---
-/project/src/app/user-profile.component.ts:
-  Line 3: Component selector should use kebab-case with app prefix: userProfile -> app-user-profile
+/project/src/app/user-profile.ts:
+  Line 3: Component selector should use kebab-case with app prefix
     - selector: 'userProfile',
     + selector: 'app-user-profile',
+  Line 4: Template URL should match Angular 20 naming
+    - templateUrl: './user-profile.component.html',
+    + templateUrl: './user-profile.html',
+  Line 5: Style URL should match Angular 20 naming  
+    - styleUrls: ['./user-profile.component.css'],
+    + styleUrls: ['./user-profile.css'],
 
 ✅ Refactoring completed successfully!
 ```
@@ -278,10 +339,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### v1.0.0
 
-- Initial release
-- File naming convention enforcement
-- Component selector and class name refactoring
-- Directive selector and class name refactoring
-- Template and style URL fixing
-- Comprehensive CLI with dry-run mode
-- Full test coverage
+- 🚀 **Angular 20 Support**: Clean, concise file naming conventions
+- 📁 **Modern File Naming**: Remove redundant suffixes from components, services, directives
+- 🔗 **Smart URL Updates**: Template and style URLs match new Angular 20 naming
+- 🎯 **Hyphenated Suffixes**: Pipes, modules, guards use hyphenated suffixes (`-pipe.ts`, `-module.ts`)
+- 🏷️ **Component & Directive Refactoring**: Proper selectors and class names
+- 🧪 **Comprehensive CLI**: Full dry-run mode with detailed reporting
+- ✅ **Full Test Coverage**: Extensive test suite with integration tests
+- 🔄 **Automated Publishing**: GitHub Actions workflow for npm releases

@@ -102,7 +102,7 @@ describe('ComponentNamingRule', () => {
       expect(result.newContent).toBeUndefined();
     });
 
-    it('should fix templateUrl and styleUrls to match component name', async () => {
+    it('should fix templateUrl and styleUrls to match Angular 20 naming (no .component suffix)', async () => {
       const file: AngularFile = {
         path: '/test/user-profile.component.ts',
         content: `
@@ -118,8 +118,8 @@ describe('ComponentNamingRule', () => {
 
       const result = await rule.apply(file);
 
-      expect(result.newContent).toContain("templateUrl: './user-profile.component.html'");
-      expect(result.newContent).toContain("styleUrls: ['./user-profile.component.css']");
+      expect(result.newContent).toContain("templateUrl: './user-profile.html'");
+      expect(result.newContent).toContain("styleUrls: ['./user-profile.css']");
     });
   });
 });
