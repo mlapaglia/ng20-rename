@@ -44,12 +44,14 @@ export class FileNamingRule extends RenameRule {
     if (existsSync(newPath) && newPath !== file.path) {
       // Target file already exists - add to manual review list
       return {
-        manualReviewRequired: [{
-          filePath: file.path,
-          desiredNewPath: newPath,
-          reason: `Cannot rename to ${expectedFileName} - target file already exists`,
-          conflictType: 'naming_conflict'
-        }],
+        manualReviewRequired: [
+          {
+            filePath: file.path,
+            desiredNewPath: newPath,
+            reason: `Cannot rename to ${expectedFileName} - target file already exists`,
+            conflictType: 'naming_conflict'
+          }
+        ],
         reason: `Skipped rename due to conflict: ${currentFileName} -> ${expectedFileName} (target file already exists)`
       };
     }
@@ -189,7 +191,7 @@ export class FileNamingRule extends RenameRule {
 
       if (existsSync(oldAssociatedPath)) {
         const newAssociatedPath = join(fileDir, `${newKebabName}${ext}`);
-        
+
         // Check for conflicts before adding to rename list
         if (!existsSync(newAssociatedPath) || newAssociatedPath === oldAssociatedPath) {
           renames.push({

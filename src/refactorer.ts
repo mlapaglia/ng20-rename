@@ -1,7 +1,7 @@
 import { glob } from 'glob';
 import { readFileSync, writeFileSync, renameSync, existsSync } from 'fs';
 
-import { RefactorOptions, RefactorResult, AngularFile, AngularFileType, RenamedFile, ContentChange, ManualReviewItem } from './types';
+import { RefactorOptions, RefactorResult, AngularFile, AngularFileType, RenamedFile, ContentChange } from './types';
 import { RenameRule } from './rules/base-rule';
 import { FileNamingRule } from './rules/file-naming-rule';
 import { ComponentNamingRule } from './rules/component-naming-rule';
@@ -115,11 +115,13 @@ export class AngularRefactorer {
       return AngularFileType.STYLESHEET;
     }
 
-    if (fileName.endsWith('.component.ts') || 
-        content.includes('@Component') || 
-        /export\s+class\s+\w*Component\s*{/.test(content) ||
-        content.includes('templateUrl') ||
-        content.includes('styleUrls')) {
+    if (
+      fileName.endsWith('.component.ts') ||
+      content.includes('@Component') ||
+      /export\s+class\s+\w*Component\s*{/.test(content) ||
+      content.includes('templateUrl') ||
+      content.includes('styleUrls')
+    ) {
       return AngularFileType.COMPONENT;
     }
 
@@ -236,10 +238,13 @@ export class AngularRefactorer {
   }
 
   private logFileTypeBreakdown(files: AngularFile[]): void {
-    const typeCount = files.reduce((acc, file) => {
-      acc[file.type] = (acc[file.type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const typeCount = files.reduce(
+      (acc, file) => {
+        acc[file.type] = (acc[file.type] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     const typeNames = {
       [AngularFileType.COMPONENT]: 'Components',

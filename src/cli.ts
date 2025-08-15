@@ -101,7 +101,9 @@ program
           console.log('The following files require manual attention due to naming conflicts:');
           result.manualReviewRequired.forEach((item, index) => {
             console.log(`\n${index + 1}. ${getRelativePath(item.filePath)}`);
-            console.log(`   Desired rename: ${getRelativePath(item.filePath)} -> ${getRelativePath(item.desiredNewPath)}`);
+            console.log(
+              `   Desired rename: ${getRelativePath(item.filePath)} -> ${getRelativePath(item.desiredNewPath)}`
+            );
             console.log(`   Issue: ${item.reason}`);
             console.log(`   Action needed: Resolve the naming conflict manually`);
           });
