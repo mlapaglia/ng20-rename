@@ -1,8 +1,16 @@
-import { AngularFile } from '../types';
+import { AngularFile, ManualReviewItem } from '../types';
 
 export interface RuleResult {
   /** New file name if the file should be renamed */
   newFileName?: string;
+  /** Additional files that should be renamed (for associated files like HTML, CSS, spec) */
+  additionalRenames?: Array<{
+    oldPath: string;
+    newPath: string;
+    reason: string;
+  }>;
+  /** Files that require manual review due to conflicts */
+  manualReviewRequired?: ManualReviewItem[];
   /** New file content if the content should be modified */
   newContent?: string;
   /** Reason for the change */

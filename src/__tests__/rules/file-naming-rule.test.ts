@@ -42,7 +42,7 @@ describe('FileNamingRule', () => {
       const result = await rule.apply(file);
 
       expect(result.newFileName).toBe('/test/user-profile.ts'.replace(/\//g, path.sep));
-      expect(result.reason).toContain('File name should use kebab-case');
+      expect(result.reason).toContain('File name should follow Angular 20 conventions');
     });
 
     it('should not rename correctly named files (Angular 20)', async () => {

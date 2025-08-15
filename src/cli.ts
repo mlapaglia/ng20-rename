@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import { resolve } from 'path';
+import { resolve, relative } from 'path';
 import { existsSync } from 'fs';
 import { AngularRefactorer } from './refactorer';
 import { RefactorOptions } from './types';
@@ -48,17 +48,23 @@ program
         const refactorer = new AngularRefactorer(refactorOptions);
         const result = await refactorer.refactor();
 
+        // Helper function to get relative path for cleaner output
+        const getRelativePath = (filePath: string) => {
+          return relative(process.cwd(), filePath);
+        };
+
         // Display results
         console.log('\n=== Refactoring Results ===');
         console.log(`Files processed: ${result.processedFiles.length}`);
         console.log(`Files renamed: ${result.renamedFiles.length}`);
         console.log(`Content changes: ${result.contentChanges.length}`);
+        console.log(`Manual review required: ${result.manualReviewRequired.length}`);
         console.log(`Errors: ${result.errors.length}`);
 
         if (result.renamedFiles.length > 0) {
           console.log('\n--- File Renames ---');
           result.renamedFiles.forEach(rename => {
-            console.log(`${rename.oldPath} -> ${rename.newPath}`);
+            console.log(`${getRelativePath(rename.oldPath)} -> ${getRelativePath(rename.newPath)}`);
             console.log(`  Reason: ${rename.reason}`);
           });
         }
@@ -77,7 +83,7 @@ program
           );
 
           Object.entries(changesByFile).forEach(([filePath, changes]) => {
-            console.log(`\n${filePath}:`);
+            console.log(`\n${getRelativePath(filePath)}:`);
             changes.forEach(change => {
               console.log(`  Line ${change.line}: ${change.reason}`);
               if (change.oldContent.trim()) {
@@ -90,10 +96,21 @@ program
           });
         }
 
+        if (result.manualReviewRequired.length > 0) {
+          console.log('\n--- Manual Review Required ---');
+          console.log('The following files require manual attention due to naming conflicts:');
+          result.manualReviewRequired.forEach((item, index) => {
+            console.log(`\n${index + 1}. ${getRelativePath(item.filePath)}`);
+            console.log(`   Desired rename: ${getRelativePath(item.filePath)} -> ${getRelativePath(item.desiredNewPath)}`);
+            console.log(`   Issue: ${item.reason}`);
+            console.log(`   Action needed: Resolve the naming conflict manually`);
+          });
+        }
+
         if (result.errors.length > 0) {
           console.log('\n--- Errors ---');
           result.errors.forEach(error => {
-            console.error(`${error.filePath}: ${error.message}`);
+            console.error(`${getRelativePath(error.filePath)}: ${error.message}`);
             if (error.line) {
               console.error(`  Line: ${error.line}`);
             }
