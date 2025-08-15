@@ -18,6 +18,8 @@ export interface RefactorResult {
   renamedFiles: RenamedFile[];
   /** Content changes made */
   contentChanges: ContentChange[];
+  /** Files that require manual review due to naming conflicts */
+  manualReviewRequired: ManualReviewItem[];
   /** Any errors encountered */
   errors: RefactorError[];
 }
@@ -51,6 +53,17 @@ export interface RefactorError {
   message: string;
   /** Line number if applicable */
   line?: number;
+}
+
+export interface ManualReviewItem {
+  /** File that needs manual review */
+  filePath: string;
+  /** Desired new file name that conflicts */
+  desiredNewPath: string;
+  /** Reason for manual review */
+  reason: string;
+  /** Type of conflict */
+  conflictType: 'naming_conflict' | 'other';
 }
 
 export interface AngularFile {

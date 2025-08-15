@@ -46,6 +46,7 @@ describe('index exports', () => {
       processedFiles: [],
       renamedFiles: [],
       contentChanges: [],
+      manualReviewRequired: [],
       errors: []
     };
     expect(result).toBeDefined();

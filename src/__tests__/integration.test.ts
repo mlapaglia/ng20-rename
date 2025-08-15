@@ -283,9 +283,9 @@ $secondary-color: #6c757d;
     // Verify class name is still correct PascalCase
     expect(content).toContain('export class UserProfileComponent');
 
-    // The HTML and CSS files should still exist with their original names since they weren't renamed
-    expect(readFileSync(join(tempDir, 'UserProfile.component.html'), 'utf-8')).toBeDefined();
-    expect(readFileSync(join(tempDir, 'UserProfile.component.css'), 'utf-8')).toBeDefined();
+    // The HTML and CSS files should be renamed to follow Angular 20 conventions
+    expect(readFileSync(join(tempDir, 'user-profile.html'), 'utf-8')).toBeDefined();
+    expect(readFileSync(join(tempDir, 'user-profile.css'), 'utf-8')).toBeDefined();
   }
 
   function verifyServiceTransformations() {
@@ -350,9 +350,9 @@ $secondary-color: #6c757d;
     // Verify all files follow Angular 20 naming conventions
     const expectedFiles = [
       'user-profile.ts',
-      'UserProfile.component.html',
-      'UserProfile.component.css',
-      'UserProfile.component.spec.ts',
+      'user-profile.html',
+      'user-profile.css',
+      'user-profile.spec.ts',
       'data.ts',
       'highlight.ts',
       'custom-pipe.ts',

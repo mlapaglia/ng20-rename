@@ -23,13 +23,13 @@ A TypeScript package to refactor Angular applications to use the latest **Angula
 ### Global Installation (Recommended)
 
 ```bash
-npm install -g ng20-rename
+npm install -g @mlapaglia/ng20-rename
 ```
 
 ### Local Installation
 
 ```bash
-npm install --save-dev ng20-rename
+npm install --save-dev @mlapaglia/ng20-rename
 ```
 
 ## Usage
@@ -69,6 +69,27 @@ const result = await refactorer.refactor();
 console.log(`Files processed: ${result.processedFiles.length}`);
 console.log(`Files renamed: ${result.renamedFiles.length}`);
 console.log(`Content changes: ${result.contentChanges.length}`);
+console.log(`Manual review required: ${result.manualReviewRequired.length}`);
+console.log(`Errors: ${result.errors.length}`);
+
+// Handle manual review items
+if (result.manualReviewRequired.length > 0) {
+  console.log('\n⚠️ Manual Review Required:');
+  result.manualReviewRequired.forEach((item, index) => {
+    console.log(`${index + 1}. ${item.filePath}`);
+    console.log(`   Desired: ${item.filePath} -> ${item.desiredNewPath}`);
+    console.log(`   Issue: ${item.reason}`);
+    console.log(`   Type: ${item.conflictType}`);
+  });
+}
+
+// Handle errors
+if (result.errors.length > 0) {
+  console.log('\n❌ Errors:');
+  result.errors.forEach(error => {
+    console.error(`${error.filePath}: ${error.message}`);
+  });
+}
 ```
 
 ## Command Line Options
@@ -196,6 +217,8 @@ export class HighlightDirective { }
 
 ## Example Output
 
+### Successful Refactoring
+
 ```bash
 $ ng20-rename ./src/app --verbose
 
@@ -209,6 +232,7 @@ Exclude patterns: node_modules/**, dist/**, **/*.spec.ts
 Files processed: 15
 Files renamed: 8
 Content changes: 12
+Manual review required: 0
 Errors: 0
 
 --- File Renames ---
@@ -233,6 +257,165 @@ Errors: 0
 
 ✅ Refactoring completed successfully!
 ```
+
+### Handling Naming Conflicts
+
+When the tool encounters files that would conflict during renaming, it provides detailed warnings and requires manual intervention:
+
+```bash
+$ ng20-rename ./src/app --verbose
+
+Starting Angular refactoring in: /project/src/app
+Dry run: No
+Include patterns: **/*.ts, **/*.html, **/*.css, **/*.scss  
+Exclude patterns: node_modules/**, dist/**, **/*.spec.ts
+---
+
+=== Refactoring Results ===
+Files processed: 12
+Files renamed: 5
+Content changes: 8
+Manual review required: 2
+Errors: 0
+
+--- File Renames ---
+/project/src/app/auth.service.ts -> /project/src/app/auth.ts
+  Reason: Angular 20 clean naming: remove .service suffix
+/project/src/app/shared.module.ts -> /project/src/app/shared-module.ts
+  Reason: Angular 20 hyphenated suffix for modules
+
+--- Content Changes ---
+/project/src/app/auth.ts:
+  Line 8: Component selector should use kebab-case with app prefix
+    - selector: 'authForm',
+    + selector: 'app-auth-form',
+
+--- Manual Review Required ---
+The following files require manual attention due to naming conflicts:
+
+1. src/app/user-profile.component.ts
+   Desired rename: src/app/user-profile.component.ts -> src/app/user-profile.ts
+   Issue: Cannot rename to user-profile.ts - target file already exists
+   Action needed: Resolve the naming conflict manually
+
+2. src/app/payment.service.ts  
+   Desired rename: src/app/payment.service.ts -> src/app/payment.ts
+   Issue: Cannot rename to payment.ts - target file already exists
+   Action needed: Resolve the naming conflict manually
+
+⚠️  Manual intervention required for 2 files with naming conflicts.
+✅ Other refactoring completed successfully!
+```
+
+### Dry Run Mode
+
+Preview changes without applying them to safely assess the impact:
+
+```bash
+$ ng20-rename ./src/app --dry-run --verbose
+
+Starting Angular refactoring in: /project/src/app
+Dry run: Yes
+Include patterns: **/*.ts, **/*.html, **/*.css, **/*.scss
+Exclude patterns: node_modules/**, dist/**, **/*.spec.ts
+---
+
+=== Refactoring Results (Preview) ===
+Files processed: 15
+Files renamed: 8
+Content changes: 12
+Manual review required: 1
+Errors: 0
+
+--- File Renames (Preview) ---
+/project/src/app/user-profile.component.ts -> /project/src/app/user-profile.ts
+  Reason: Angular 20 clean naming: remove .component suffix
+/project/src/app/auth.service.ts -> /project/src/app/auth.ts
+  Reason: Angular 20 clean naming: remove .service suffix
+
+--- Manual Review Required ---
+1. src/app/data.service.ts
+   Desired rename: src/app/data.service.ts -> src/app/data.ts  
+   Issue: Cannot rename to data.ts - target file already exists
+   Action needed: Resolve the naming conflict manually
+
+⚠️  This was a dry run. No files were actually modified.
+Run without --dry-run to apply changes.
+```
+
+## Handling Naming Conflicts
+
+### Common Conflict Scenarios
+
+The tool detects and prevents potentially destructive file operations by identifying naming conflicts before they occur:
+
+#### 1. **Existing Target Files**
+When a file needs to be renamed to a name that already exists:
+
+```bash
+# Scenario: Both files exist
+src/app/user-profile.component.ts  # Needs to become user-profile.ts
+src/app/user-profile.ts            # Already exists!
+
+# Tool Response:
+--- Manual Review Required ---
+1. src/app/user-profile.component.ts
+   Desired rename: user-profile.component.ts -> user-profile.ts
+   Issue: Cannot rename to user-profile.ts - target file already exists
+   Action needed: Resolve the naming conflict manually
+```
+
+#### 2. **Associated File Conflicts**
+Components with multiple associated files (HTML, CSS, spec) may have partial conflicts:
+
+```bash
+# Scenario: Component files with mixed naming
+src/app/login.component.ts         # Needs renaming
+src/app/login.component.html       # Needs renaming  
+src/app/login.css                  # Already exists - conflict!
+src/app/login.component.css        # Needs renaming to login.css
+
+# Tool Response: Renames what it can, flags conflicts
+```
+
+### Resolving Conflicts
+
+#### **Option 1: Manual Resolution**
+
+1. Review the conflicting files
+2. Decide which file to keep or merge content
+3. Manually rename or remove files
+4. Re-run the tool
+
+#### **Option 2: Backup and Resolve**
+
+```bash
+# Create backup of conflicting target file
+mv src/app/user-profile.ts src/app/user-profile.backup.ts
+
+# Re-run the refactoring tool
+ng20-rename ./src/app
+
+# Review and merge content if needed
+# Remove backup when satisfied
+```
+
+#### **Option 3: Selective Processing**
+
+Use exclude patterns to skip problematic directories:
+
+```bash
+# Skip specific files or directories with conflicts
+ng20-rename ./src/app --exclude "src/app/conflicted/**" "src/app/user-profile.ts"
+```
+
+### Best Practices for Conflict Prevention
+
+1. **Run in Dry Mode First**: Always use `--dry-run` to preview changes
+2. **Process Incrementally**: Refactor small sections at a time
+3. **Backup Important Files**: Create backups before running on critical codebases
+4. **Review Conflicts Carefully**: Examine conflicting files to understand their purpose
+5. **Use Version Control**: Commit changes before running the tool
 
 ## API Reference
 
@@ -260,10 +443,18 @@ interface RefactorOptions {
 
 ```typescript
 interface RefactorResult {
-  processedFiles: string[];      // Files that were processed
-  renamedFiles: RenamedFile[];   // Files that were renamed
-  contentChanges: ContentChange[]; // Content modifications
-  errors: RefactorError[];       // Any errors encountered
+  processedFiles: string[];           // Files that were processed
+  renamedFiles: RenamedFile[];        // Files that were renamed
+  contentChanges: ContentChange[];    // Content modifications
+  manualReviewRequired: ManualReviewItem[]; // Files requiring manual intervention
+  errors: RefactorError[];            // Any errors encountered
+}
+
+interface ManualReviewItem {
+  filePath: string;          // File that needs manual review
+  desiredNewPath: string;    // Desired new file name that conflicts
+  reason: string;            // Reason for manual review
+  conflictType: 'naming_conflict' | 'other'; // Type of conflict
 }
 ```
 

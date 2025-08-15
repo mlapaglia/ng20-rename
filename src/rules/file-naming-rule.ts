@@ -1,4 +1,5 @@
 import { basename, dirname, join, extname } from 'path';
+import { existsSync } from 'fs';
 import { RenameRule, RuleResult } from './base-rule';
 import { AngularFile, AngularFileType } from '../types';
 
@@ -38,17 +39,35 @@ export class FileNamingRule extends RenameRule {
       return {}; // Already correctly named
     }
 
-    // Check if the current name follows kebab-case
-    const nameWithoutSuffix = this.removeTypeSuffix(fileNameWithoutExt, file.type);
-    if (!this.isKebabCase(nameWithoutSuffix)) {
-      const newPath = join(fileDir, expectedFileName);
+    // Check for naming conflicts before renaming
+    const newPath = join(fileDir, expectedFileName);
+    if (existsSync(newPath) && newPath !== file.path) {
+      // Target file already exists - add to manual review list
       return {
-        newFileName: newPath,
-        reason: `File name should use kebab-case: ${currentFileName} -> ${expectedFileName}`
+        manualReviewRequired: [
+          {
+            filePath: file.path,
+            desiredNewPath: newPath,
+            reason: `Cannot rename to ${expectedFileName} - target file already exists`,
+            conflictType: 'naming_conflict'
+          }
+        ],
+        reason: `Skipped rename due to conflict: ${currentFileName} -> ${expectedFileName} (target file already exists)`
       };
     }
 
-    return {};
+    // File name doesn't match expected Angular 20 naming convention
+    const result: RuleResult = {
+      newFileName: newPath,
+      reason: `File name should follow Angular 20 conventions: ${currentFileName} -> ${expectedFileName}`
+    };
+
+    // For components, also rename associated files (HTML, CSS, LESS, SCSS, spec)
+    if (file.type === AngularFileType.COMPONENT) {
+      result.additionalRenames = this.getAssociatedFileRenames(file.path, fileNameWithoutExt, className);
+    }
+
+    return result;
   }
 
   private getExpectedFileName(className: string, fileType: AngularFileType, extension: string): string {
@@ -141,5 +160,50 @@ export class FileNamingRule extends RenameRule {
     };
 
     return suffixes[fileType] || '';
+  }
+
+  private getAssociatedFileRenames(
+    componentPath: string,
+    currentFileNameWithoutExt: string,
+    className: string
+  ): Array<{
+    oldPath: string;
+    newPath: string;
+    reason: string;
+  }> {
+    const fileDir = dirname(componentPath);
+    const baseName = this.removeClassTypeSuffix(className, AngularFileType.COMPONENT);
+    const newKebabName = this.toKebabCase(baseName);
+    const renames: Array<{ oldPath: string; newPath: string; reason: string }> = [];
+
+    // Define the associated file extensions to check
+    const associatedExtensions = [
+      { ext: '.html', desc: 'HTML template' },
+      { ext: '.css', desc: 'CSS stylesheet' },
+      { ext: '.scss', desc: 'SCSS stylesheet' },
+      { ext: '.less', desc: 'LESS stylesheet' },
+      { ext: '.spec.ts', desc: 'spec file' }
+    ];
+
+    for (const { ext, desc } of associatedExtensions) {
+      // Look for files with the old naming pattern
+      const oldAssociatedPath = join(fileDir, `${currentFileNameWithoutExt}${ext}`);
+
+      if (existsSync(oldAssociatedPath)) {
+        const newAssociatedPath = join(fileDir, `${newKebabName}${ext}`);
+
+        // Check for conflicts before adding to rename list
+        if (!existsSync(newAssociatedPath) || newAssociatedPath === oldAssociatedPath) {
+          renames.push({
+            oldPath: oldAssociatedPath,
+            newPath: newAssociatedPath,
+            reason: `Associated ${desc} should follow Angular 20 conventions: ${basename(oldAssociatedPath)} -> ${basename(newAssociatedPath)}`
+          });
+        }
+        // Note: We silently skip conflicting associated files rather than warn for each one
+      }
+    }
+
+    return renames;
   }
 }

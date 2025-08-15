@@ -32,6 +32,7 @@ export class AngularRefactorer {
       processedFiles: [],
       renamedFiles: [],
       contentChanges: [],
+      manualReviewRequired: [],
       errors: []
     };
 
@@ -40,6 +41,7 @@ export class AngularRefactorer {
 
       if (this.options.verbose) {
         console.log(`Found ${files.length} Angular files to process`);
+        this.logFileTypeBreakdown(files);
       }
 
       for (const file of files) {
@@ -113,7 +115,13 @@ export class AngularRefactorer {
       return AngularFileType.STYLESHEET;
     }
 
-    if (fileName.endsWith('.component.ts') || content.includes('@Component')) {
+    if (
+      fileName.endsWith('.component.ts') ||
+      content.includes('@Component') ||
+      /export\s+class\s+\w*Component\s*{/.test(content) ||
+      content.includes('templateUrl') ||
+      content.includes('styleUrls')
+    ) {
       return AngularFileType.COMPONENT;
     }
 
@@ -168,6 +176,23 @@ export class AngularRefactorer {
           file.path = ruleResult.newFileName;
         }
 
+        // Handle additional file renames (associated files like HTML, CSS, spec)
+        if (ruleResult.additionalRenames) {
+          for (const additionalRename of ruleResult.additionalRenames) {
+            if (existsSync(additionalRename.oldPath)) {
+              if (!this.options.dryRun) {
+                renameSync(additionalRename.oldPath, additionalRename.newPath);
+              }
+              result.renamedFiles.push(additionalRename);
+            }
+          }
+        }
+
+        // Handle manual review items
+        if (ruleResult.manualReviewRequired) {
+          result.manualReviewRequired.push(...ruleResult.manualReviewRequired);
+        }
+
         if (ruleResult.newContent && ruleResult.newContent !== file.content) {
           const changes = this.getContentChanges(
             file.path,
@@ -210,5 +235,36 @@ export class AngularRefactorer {
     }
 
     return changes;
+  }
+
+  private logFileTypeBreakdown(files: AngularFile[]): void {
+    const typeCount = files.reduce(
+      (acc, file) => {
+        acc[file.type] = (acc[file.type] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+
+    const typeNames = {
+      [AngularFileType.COMPONENT]: 'Components',
+      [AngularFileType.SERVICE]: 'Services',
+      [AngularFileType.DIRECTIVE]: 'Directives',
+      [AngularFileType.PIPE]: 'Pipes',
+      [AngularFileType.MODULE]: 'Modules',
+      [AngularFileType.GUARD]: 'Guards',
+      [AngularFileType.INTERCEPTOR]: 'Interceptors',
+      [AngularFileType.RESOLVER]: 'Resolvers',
+      [AngularFileType.HTML_TEMPLATE]: 'HTML Templates',
+      [AngularFileType.STYLESHEET]: 'Stylesheets',
+      [AngularFileType.SPEC]: 'Spec Files',
+      [AngularFileType.OTHER]: 'Other Files'
+    };
+
+    console.log('File type breakdown:');
+    Object.entries(typeCount).forEach(([type, count]) => {
+      const typeName = typeNames[type as AngularFileType] || type;
+      console.log(`  ${typeName}: ${count}`);
+    });
   }
 }
