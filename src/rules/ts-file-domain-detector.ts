@@ -8,14 +8,24 @@ import { escapeRegExp, validateRegexPattern, DOMAIN_DETECTION } from '../shared/
 interface DomainPattern {
   suffix: string;
   patterns: {
-    methods?: string[]; // Method/function name patterns
-    imports?: string[]; // Import patterns
-    keywords?: string[]; // Code content keywords
-    exports?: string[]; // Export patterns
+    methods?: string[]; // Method/function name patterns (will be escaped)
+    imports?: string[]; // Import patterns (literal strings, no escaping needed)
+    keywords?: string[]; // Code content keywords (will be escaped)
+    exports?: string[]; // Export patterns (regex patterns, no escaping needed)
   };
 }
 
-const TS_DOMAIN_PATTERNS: DomainPattern[] = [
+interface ProcessedDomainPattern {
+  suffix: string;
+  patterns: {
+    methods?: string[]; // Pre-escaped method patterns
+    imports?: string[]; // Import patterns (unchanged)
+    keywords?: string[]; // Pre-escaped keyword patterns
+    exports?: string[]; // Export patterns (unchanged)
+  };
+}
+
+const TS_DOMAIN_PATTERNS_RAW: DomainPattern[] = [
   {
     suffix: '-model',
     patterns: {
@@ -60,8 +70,8 @@ const TS_DOMAIN_PATTERNS: DomainPattern[] = [
     suffix: '-constants',
     patterns: {
       keywords: ['constant', 'CATEGORIES', 'DEFAULT', 'MAX', 'MIN', 'API_ENDPOINTS', 'HTTP_STATUS'],
-      // Matches constant declarations with all-uppercase names, e.g. 'const MAX_VALUE ='
-      // Matches constant declarations with names containing underscores, e.g. 'const API_ENDPOINTS ='
+      // Matches constant declarations with all-uppercase names, e.g. 'const MAX_VALUE=' or 'const MAX_VALUE ='
+      // Matches constant declarations with names containing underscores, e.g. 'const API_ENDPOINTS=' or 'const API_ENDPOINTS ='
       exports: ['const\\s+[A-Z_]+\\s*=', 'const\\s+\\w*_\\w*\\s*='],
       methods: []
     }
@@ -118,6 +128,17 @@ const TS_DOMAIN_PATTERNS: DomainPattern[] = [
   }
 ];
 
+// Pre-process patterns to escape static strings for better performance
+const TS_DOMAIN_PATTERNS: ProcessedDomainPattern[] = TS_DOMAIN_PATTERNS_RAW.map(pattern => ({
+  suffix: pattern.suffix,
+  patterns: {
+    methods: pattern.patterns.methods?.map(method => escapeRegExp(method)),
+    imports: pattern.patterns.imports, // No escaping needed for import strings
+    keywords: pattern.patterns.keywords?.map(keyword => escapeRegExp(keyword)),
+    exports: pattern.patterns.exports // No escaping needed for regex patterns
+  }
+}));
+
 export class TsFileDomainDetector {
   /**
    * Analyzes TypeScript file content to detect the most appropriate domain suffix
@@ -128,10 +149,9 @@ export class TsFileDomainDetector {
     for (const pattern of TS_DOMAIN_PATTERNS) {
       let score = 0;
 
-      // Check method names
+      // Check method names (pre-escaped)
       if (pattern.patterns.methods) {
-        for (const method of pattern.patterns.methods) {
-          const escapedMethod = escapeRegExp(method);
+        for (const escapedMethod of pattern.patterns.methods) {
           if (new RegExp(`\\b${escapedMethod}\\w*\\s*\\(`).test(fileContent)) {
             score += 2;
           }
@@ -147,10 +167,9 @@ export class TsFileDomainDetector {
         }
       }
 
-      // Check keywords in content
+      // Check keywords in content (pre-escaped)
       if (pattern.patterns.keywords) {
-        for (const keyword of pattern.patterns.keywords) {
-          const escapedKeyword = escapeRegExp(keyword);
+        for (const escapedKeyword of pattern.patterns.keywords) {
           if (new RegExp(`\\b${escapedKeyword}\\b`, 'i').test(fileContent)) {
             score += 1;
           }
@@ -208,7 +227,9 @@ export class TsFileDomainDetector {
     }
 
     if (pattern.patterns.exports) {
-      const foundExports = pattern.patterns.exports.filter(exp => new RegExp(exp, 'i').test(fileContent));
+      const foundExports = pattern.patterns.exports.filter(
+        exp => validateRegexPattern(exp) && new RegExp(exp, 'i').test(fileContent)
+      );
       if (foundExports.length > 0) {
         reasons.push(`Exports: ${foundExports.join(', ')}`);
       }
