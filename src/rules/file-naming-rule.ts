@@ -177,7 +177,6 @@ export class FileNamingRule extends RenameRule {
   }
 
   private getTypeSuffix(fileType: AngularFileType, fileContent?: string): string {
-    // For services, use smart domain detection if enabled
     if (fileType === AngularFileType.SERVICE && this.smartServices && fileContent) {
       const detectedDomain = ServiceDomainDetector.detectDomain(fileContent);
       if (detectedDomain) {
