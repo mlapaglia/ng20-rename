@@ -6,10 +6,10 @@
 interface DomainPattern {
   suffix: string;
   patterns: {
-    dependencies?: string[];      // Injected services/dependencies
-    methods?: string[];          // Method name patterns  
-    imports?: string[];          // Import patterns
-    keywords?: string[];         // Code content keywords
+    dependencies?: string[]; // Injected services/dependencies
+    methods?: string[]; // Method name patterns
+    imports?: string[]; // Import patterns
+    keywords?: string[]; // Code content keywords
   };
 }
 
@@ -71,12 +71,12 @@ export class ServiceDomainDetector {
   /**
    * Analyzes service content to detect the most appropriate domain suffix
    */
-  static detectDomain(serviceContent: string, className: string): string | null {
+  static detectDomain(serviceContent: string): string | null {
     const scores = new Map<string, number>();
-    
+
     for (const pattern of DOMAIN_PATTERNS) {
       let score = 0;
-      
+
       // Check dependencies (constructor injection)
       if (pattern.patterns.dependencies) {
         for (const dep of pattern.patterns.dependencies) {
@@ -85,7 +85,7 @@ export class ServiceDomainDetector {
           }
         }
       }
-      
+
       // Check method names
       if (pattern.patterns.methods) {
         for (const method of pattern.patterns.methods) {
@@ -94,7 +94,7 @@ export class ServiceDomainDetector {
           }
         }
       }
-      
+
       // Check imports
       if (pattern.patterns.imports) {
         for (const imp of pattern.patterns.imports) {
@@ -103,7 +103,7 @@ export class ServiceDomainDetector {
           }
         }
       }
-      
+
       // Check keywords in content
       if (pattern.patterns.keywords) {
         for (const keyword of pattern.patterns.keywords) {
@@ -112,23 +112,24 @@ export class ServiceDomainDetector {
           }
         }
       }
-      
+
       scores.set(pattern.suffix, score);
     }
-    
+
     // Find highest scoring pattern
-    const sortedScores = [...scores.entries()].sort(([,a], [,b]) => b - a);
+    const sortedScores = [...scores.entries()].sort(([, a], [, b]) => b - a);
     const [bestSuffix, bestScore] = sortedScores[0];
-    
+
     // Only use domain-specific naming if confidence is high enough
     // and significantly better than other options
     if (bestScore >= 4) {
       const [, secondBestScore] = sortedScores[1] || [null, 0];
-      if (bestScore > secondBestScore + 1) { // Clear winner
+      if (bestScore > secondBestScore + 1) {
+        // Clear winner
         return bestSuffix;
       }
     }
-    
+
     // Not confident enough - return null for fallback behavior
     return null;
   }
@@ -144,17 +145,15 @@ export class ServiceDomainDetector {
 
     // Check what triggered the detection
     if (pattern.patterns.dependencies) {
-      const foundDeps = pattern.patterns.dependencies.filter(dep => 
-        new RegExp(`\\b${dep}\\b`).test(serviceContent)
-      );
+      const foundDeps = pattern.patterns.dependencies.filter(dep => new RegExp(`\\b${dep}\\b`).test(serviceContent));
       if (foundDeps.length > 0) {
         reasons.push(`Dependencies: ${foundDeps.join(', ')}`);
       }
     }
 
     if (pattern.patterns.imports) {
-      const foundImports = pattern.patterns.imports.filter(imp => 
-        serviceContent.includes(`'${imp}'`) || serviceContent.includes(`"${imp}"`)
+      const foundImports = pattern.patterns.imports.filter(
+        imp => serviceContent.includes(`'${imp}'`) || serviceContent.includes(`"${imp}"`)
       );
       if (foundImports.length > 0) {
         reasons.push(`Imports: ${foundImports.join(', ')}`);

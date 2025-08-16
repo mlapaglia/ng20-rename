@@ -94,13 +94,13 @@ if (result.errors.length > 0) {
 
 ## Command Line Options
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `<directory>` | Directory to scan for Angular files | Required |
-| `-d, --dry-run` | Perform a dry run without making changes | `false` |
-| `-v, --verbose` | Show verbose output | `false` |
-| `-i, --include <patterns...>` | File patterns to include | `["**/*.ts", "**/*.html", "**/*.css", "**/*.scss"]` |
-| `-e, --exclude <patterns...>` | File patterns to exclude | `["node_modules/**", "dist/**", "**/*.spec.ts"]` |
+| Option                        | Description                              | Default                                             |
+| ----------------------------- | ---------------------------------------- | --------------------------------------------------- |
+| `<directory>`                 | Directory to scan for Angular files      | Required                                            |
+| `-d, --dry-run`               | Perform a dry run without making changes | `false`                                             |
+| `-v, --verbose`               | Show verbose output                      | `false`                                             |
+| `-i, --include <patterns...>` | File patterns to include                 | `["**/*.ts", "**/*.html", "**/*.css", "**/*.scss"]` |
+| `-e, --exclude <patterns...>` | File patterns to exclude                 | `["node_modules/**", "dist/**", "**/*.spec.ts"]`    |
 
 ## Angular 20 Naming Conventions Applied
 
@@ -111,25 +111,27 @@ Angular 20 introduces **clean and concise** file names by removing redundant suf
 ✅ **Components, Services & Directives**: No suffixes needed  
 ✅ **Other Types**: Hyphenated suffixes for clarity
 
-| File Type | Before (Old Angular) | After (Angular 20) |
-|-----------|---------------------|-------------------|
-| **Components** | `user-profile.component.ts` | `user-profile.ts` |
-| **Services** | `auth.service.ts` | `auth.ts` or `auth-store.ts` |
-| **Directives** | `highlight.directive.ts` | `highlight.ts` |
-| **Pipes** | `currency.pipe.ts` | `currency-pipe.ts` |
-| **Modules** | `shared.module.ts` | `shared-module.ts` |
-| **Guards** | `auth.guard.ts` | `auth-guard.ts` |
-| **Interceptors** | `auth.interceptor.ts` | `auth-interceptor.ts` |
-| **Resolvers** | `data.resolver.ts` | `data-resolver.ts` |
+| File Type        | Before (Old Angular)        | After (Angular 20)           |
+| ---------------- | --------------------------- | ---------------------------- |
+| **Components**   | `user-profile.component.ts` | `user-profile.ts`            |
+| **Services**     | `auth.service.ts`           | `auth.ts` or `auth-store.ts` |
+| **Directives**   | `highlight.directive.ts`    | `highlight.ts`               |
+| **Pipes**        | `currency.pipe.ts`          | `currency-pipe.ts`           |
+| **Modules**      | `shared.module.ts`          | `shared-module.ts`           |
+| **Guards**       | `auth.guard.ts`             | `auth-guard.ts`              |
+| **Interceptors** | `auth.interceptor.ts`       | `auth-interceptor.ts`        |
+| **Resolvers**    | `data.resolver.ts`          | `data-resolver.ts`           |
 
 ### Key Benefits:
+
 - 📦 **Cleaner file structure** with less redundancy
-- 🚀 **Faster navigation** in IDEs and file explorers  
+- 🚀 **Faster navigation** in IDEs and file explorers
 - 🎯 **Modern Angular practices** following latest conventions
 
 ### Component Conventions (Angular 20)
 
 ✅ **Before** (Old Angular):
+
 ```typescript
 // File: user-profile.component.ts
 @Component({
@@ -137,21 +139,23 @@ Angular 20 introduces **clean and concise** file names by removing redundant suf
   templateUrl: './UserProfile.component.html',
   styleUrls: ['./UserProfile.component.css']
 })
-export class userProfile { }
+export class userProfile {}
 ```
 
 ✅ **After** (Angular 20):
-```typescript  
+
+```typescript
 // File: user-profile.ts (no .component suffix!)
 @Component({
   selector: 'app-user-profile',
-  templateUrl: './user-profile.html',      // No .component in URL
-  styleUrls: ['./user-profile.css']       // No .component in URL
+  templateUrl: './user-profile.html', // No .component in URL
+  styleUrls: ['./user-profile.css'] // No .component in URL
 })
-export class UserProfileComponent { }
+export class UserProfileComponent {}
 ```
 
 **Key Changes:**
+
 - 📁 **File name**: `user-profile.component.ts` → `user-profile.ts`
 - 🔗 **Template URL**: `./user-profile.component.html` → `./user-profile.html`
 - 🎨 **Style URL**: `./user-profile.component.css` → `./user-profile.css`
@@ -159,52 +163,58 @@ export class UserProfileComponent { }
 ### Service Conventions (Angular 20)
 
 ✅ **Before** (Old Angular):
+
 ```typescript
 // File: auth.service.ts
 @Injectable({
   providedIn: 'root'
 })
-export class AuthService { }
+export class AuthService {}
 ```
 
 ✅ **After** (Angular 20):
+
 ```typescript
 // File: auth.ts (no .service suffix!)
 // OR: auth-store.ts, auth-api.ts (domain-specific names)
 @Injectable({
-  providedIn: 'root'  
+  providedIn: 'root'
 })
-export class AuthService { }
+export class AuthService {}
 ```
 
 ### Directive Conventions (Angular 20)
 
 ✅ **Before** (Old Angular):
+
 ```typescript
 // File: highlight.directive.ts
 @Directive({
   selector: '[highlight]'
 })
-export class highlight { }
+export class highlight {}
 ```
 
 ✅ **After** (Angular 20):
+
 ```typescript
 // File: highlight.ts (no .directive suffix!)
 @Directive({
   selector: '[appHighlight]'
 })
-export class HighlightDirective { }
+export class HighlightDirective {}
 ```
 
 ## Supported Angular File Types
 
 ### 🎯 Angular 20 Clean Naming:
+
 - 🔸 **Components** (`.ts` - no suffix!)
-- 🔸 **Services** (`.ts` - no suffix!)  
+- 🔸 **Services** (`.ts` - no suffix!)
 - 🔸 **Directives** (`.ts` - no suffix!)
 
 ### 🔗 Hyphenated Suffixes:
+
 - 🔸 **Pipes** (`-pipe.ts`)
 - 🔸 **Modules** (`-module.ts`)
 - 🔸 **Guards** (`-guard.ts`)
@@ -212,6 +222,7 @@ export class HighlightDirective { }
 - 🔸 **Resolvers** (`-resolver.ts`)
 
 ### 📄 Assets:
+
 - 🔸 **Templates** (`.html`)
 - 🔸 **Stylesheets** (`.css`, `.scss`, `.sass`)
 
@@ -238,7 +249,7 @@ Errors: 0
 --- File Renames ---
 /project/src/app/user-profile.component.ts -> /project/src/app/user-profile.ts
   Reason: Angular 20 clean naming: remove .component suffix
-/project/src/app/auth.service.ts -> /project/src/app/auth.ts  
+/project/src/app/auth.service.ts -> /project/src/app/auth.ts
   Reason: Angular 20 clean naming: remove .service suffix
 /project/src/app/shared.module.ts -> /project/src/app/shared-module.ts
   Reason: Angular 20 hyphenated suffix for modules
@@ -251,7 +262,7 @@ Errors: 0
   Line 4: Template URL should match Angular 20 naming
     - templateUrl: './user-profile.component.html',
     + templateUrl: './user-profile.html',
-  Line 5: Style URL should match Angular 20 naming  
+  Line 5: Style URL should match Angular 20 naming
     - styleUrls: ['./user-profile.component.css'],
     + styleUrls: ['./user-profile.css'],
 
@@ -267,7 +278,7 @@ $ ng20-rename ./src/app --verbose
 
 Starting Angular refactoring in: /project/src/app
 Dry run: No
-Include patterns: **/*.ts, **/*.html, **/*.css, **/*.scss  
+Include patterns: **/*.ts, **/*.html, **/*.css, **/*.scss
 Exclude patterns: node_modules/**, dist/**, **/*.spec.ts
 ---
 
@@ -298,7 +309,7 @@ The following files require manual attention due to naming conflicts:
    Issue: Cannot rename to user-profile.ts - target file already exists
    Action needed: Resolve the naming conflict manually
 
-2. src/app/payment.service.ts  
+2. src/app/payment.service.ts
    Desired rename: src/app/payment.service.ts -> src/app/payment.ts
    Issue: Cannot rename to payment.ts - target file already exists
    Action needed: Resolve the naming conflict manually
@@ -335,7 +346,7 @@ Errors: 0
 
 --- Manual Review Required ---
 1. src/app/data.service.ts
-   Desired rename: src/app/data.service.ts -> src/app/data.ts  
+   Desired rename: src/app/data.service.ts -> src/app/data.ts
    Issue: Cannot rename to data.ts - target file already exists
    Action needed: Resolve the naming conflict manually
 
@@ -350,6 +361,7 @@ Run without --dry-run to apply changes.
 The tool detects and prevents potentially destructive file operations by identifying naming conflicts before they occur:
 
 #### 1. **Existing Target Files**
+
 When a file needs to be renamed to a name that already exists:
 
 ```bash
@@ -366,12 +378,13 @@ src/app/user-profile.ts            # Already exists!
 ```
 
 #### 2. **Associated File Conflicts**
+
 Components with multiple associated files (HTML, CSS, spec) may have partial conflicts:
 
 ```bash
 # Scenario: Component files with mixed naming
 src/app/login.component.ts         # Needs renaming
-src/app/login.component.html       # Needs renaming  
+src/app/login.component.html       # Needs renaming
 src/app/login.css                  # Already exists - conflict!
 src/app/login.component.css        # Needs renaming to login.css
 
@@ -427,11 +440,11 @@ Main class for performing Angular refactoring operations.
 
 ```typescript
 interface RefactorOptions {
-  rootDir: string;           // Directory to scan
-  include?: string[];        // File patterns to include
-  exclude?: string[];        // File patterns to exclude
-  dryRun?: boolean;          // Preview mode
-  verbose?: boolean;         // Detailed output
+  rootDir: string; // Directory to scan
+  include?: string[]; // File patterns to include
+  exclude?: string[]; // File patterns to exclude
+  dryRun?: boolean; // Preview mode
+  verbose?: boolean; // Detailed output
 }
 ```
 
@@ -443,17 +456,17 @@ interface RefactorOptions {
 
 ```typescript
 interface RefactorResult {
-  processedFiles: string[];           // Files that were processed
-  renamedFiles: RenamedFile[];        // Files that were renamed
-  contentChanges: ContentChange[];    // Content modifications
+  processedFiles: string[]; // Files that were processed
+  renamedFiles: RenamedFile[]; // Files that were renamed
+  contentChanges: ContentChange[]; // Content modifications
   manualReviewRequired: ManualReviewItem[]; // Files requiring manual intervention
-  errors: RefactorError[];            // Any errors encountered
+  errors: RefactorError[]; // Any errors encountered
 }
 
 interface ManualReviewItem {
-  filePath: string;          // File that needs manual review
-  desiredNewPath: string;    // Desired new file name that conflicts
-  reason: string;            // Reason for manual review
+  filePath: string; // File that needs manual review
+  desiredNewPath: string; // Desired new file name that conflicts
+  reason: string; // Reason for manual review
   conflictType: 'naming_conflict' | 'other'; // Type of conflict
 }
 ```

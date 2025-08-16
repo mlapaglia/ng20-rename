@@ -21,7 +21,16 @@ program
   .option('-e, --exclude <patterns...>', 'File patterns to exclude', ['node_modules/**', 'dist/**', '**/*.spec.ts'])
   .option('--disable-smart-services', 'Disable smart domain detection for services', false)
   .action(
-    async (directory: string, options: { dryRun: boolean; verbose: boolean; include: string[]; exclude: string[]; disableSmartServices: boolean }) => {
+    async (
+      directory: string,
+      options: {
+        dryRun: boolean;
+        verbose: boolean;
+        include: string[];
+        exclude: string[];
+        disableSmartServices: boolean;
+      }
+    ) => {
       try {
         const rootDir = resolve(directory);
 

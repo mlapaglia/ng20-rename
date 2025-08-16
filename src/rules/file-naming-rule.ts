@@ -15,7 +15,7 @@ import { ServiceDomainDetector } from './service-domain-detector';
 export class FileNamingRule extends RenameRule {
   readonly name = 'file-naming';
   readonly description = 'Ensures file names follow Angular 20 naming conventions: clean, concise, kebab-case';
-  
+
   private smartServices: boolean;
 
   constructor(smartServices: boolean = true) {
@@ -78,7 +78,12 @@ export class FileNamingRule extends RenameRule {
     return result;
   }
 
-  private getExpectedFileName(className: string, fileType: AngularFileType, extension: string, fileContent?: string): string {
+  private getExpectedFileName(
+    className: string,
+    fileType: AngularFileType,
+    extension: string,
+    fileContent?: string
+  ): string {
     // Remove type suffix from class name (e.g., UserProfileComponent -> UserProfile)
     const baseName = this.removeClassTypeSuffix(className, fileType);
 
@@ -150,7 +155,7 @@ export class FileNamingRule extends RenameRule {
   private getTypeSuffix(fileType: AngularFileType, fileContent?: string): string {
     // For services, use smart domain detection if enabled
     if (fileType === AngularFileType.SERVICE && this.smartServices && fileContent) {
-      const detectedDomain = ServiceDomainDetector.detectDomain(fileContent, '');
+      const detectedDomain = ServiceDomainDetector.detectDomain(fileContent);
       if (detectedDomain) {
         return detectedDomain;
       }
