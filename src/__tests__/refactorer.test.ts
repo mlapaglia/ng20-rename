@@ -105,7 +105,7 @@ describe('AngularRefactorer', () => {
 
     it('should handle naming conflicts', async () => {
       // Create conflicting files
-      writeFileSync(join(tempDir, 'user.ts'), 'export class User {}');
+      writeFileSync(join(tempDir, 'user.ts'), 'export class User { id: number; name: string; email: string; }');
       writeFileSync(
         join(tempDir, 'user.service.ts'),
         'import { Injectable } from "@angular/core"; @Injectable() export class UserService {}'
@@ -114,8 +114,17 @@ describe('AngularRefactorer', () => {
       const result = await refactorer.refactor();
 
       expect(result.processedFiles).toHaveLength(2);
-      expect(result.manualReviewRequired).toHaveLength(1);
-      expect(result.manualReviewRequired[0].conflictType).toBe('naming_conflict');
+      expect(result.renamedFiles).toHaveLength(2); // Both files should be renamed
+      expect(result.manualReviewRequired).toHaveLength(0); // Conflict should be automatically resolved
+
+      // Check that the service was renamed to user.ts and the conflicting file to user-model.ts
+      const serviceRename = result.renamedFiles.find(r => r.oldPath.includes('user.service.ts'));
+      const conflictRename = result.renamedFiles.find(
+        r => r.oldPath.includes('user.ts') && !r.oldPath.includes('service')
+      );
+
+      expect(serviceRename?.newPath).toContain('user.ts');
+      expect(conflictRename?.newPath).toContain('user-model.ts');
     });
 
     it('should process multiple file types', async () => {

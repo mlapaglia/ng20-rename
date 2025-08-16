@@ -3,8 +3,8 @@
 A TypeScript package to refactor Angular applications to use the latest **Angular 20** naming conventions with clean, concise file names that remove redundant suffixes.
 
 [![CI](https://github.com/mlapaglia/ng20-rename/actions/workflows/ci.yml/badge.svg)](https://github.com/mlapaglia/ng20-rename/actions/workflows/ci.yml)
-[![npm version](https://badge.fury.io/js/ng20-rename.svg)](https://badge.fury.io/js/ng20-rename)
-[![codecov](https://codecov.io/gh/mlapaglia/ng20-rename/branch/main/graph/badge.svg)](https://codecov.io/gh/mlapaglia/ng20-rename)
+[![npm version](https://badge.fury.io/js/@mlapaglia%2Fng20-rename.svg)](https://badge.fury.io/js/@mlapaglia%2Fng20-rename)
+[![codecov](https://codecov.io/gh/mlapaglia/ng20-rename/graph/badge.svg?token=U3HLWUK4UU)](https://codecov.io/gh/mlapaglia/ng20-rename)
 
 ## Features
 
@@ -12,11 +12,12 @@ A TypeScript package to refactor Angular applications to use the latest **Angula
 
 - 🔄 **Modern File Naming**: Clean file names without redundant suffixes (components, services, directives)
 - 🧠 **Smart Domain Detection**: Automatically detects service patterns and suggests domain-specific names (`-api`, `-store`, `-notifications`, etc.)
+- 🤖 **Intelligent Conflict Resolution**: Automatically resolves naming conflicts by analyzing file content and applying smart renaming strategies
 - 🏷️ **Component Selectors**: Ensures component selectors use kebab-case with app prefix
 - 📝 **Class Names**: Validates and fixes class names to use PascalCase with proper suffixes
 - 🎯 **Directive Selectors**: Ensures directive selectors use camelCase with app prefix
 - 🔍 **Template & Style URLs**: Updates URLs to match Angular 20 file naming (no `.component` suffix)
-- ⚠️ **Conflict Detection**: Identifies naming conflicts and provides manual review guidance
+- ⚠️ **Advanced Conflict Detection**: Identifies naming conflicts and provides manual review guidance when automatic resolution isn't possible
 - 🧪 **Dry Run Mode**: Preview changes before applying them
 - 📊 **Detailed Reporting**: Shows exactly what will be changed and why
 
@@ -230,6 +231,74 @@ ng20-rename ./src/app
 ng20-rename ./src/app --disable-smart-services
 ```
 
+## 🤖 Intelligent Conflict Resolution
+
+**NEW**: The tool now automatically resolves most naming conflicts by analyzing file content and applying smart renaming strategies.
+
+### How It Works
+
+When a file needs to be renamed to a name that already exists, the tool:
+
+1. **Analyzes the conflicting file** using TypeScript domain detection
+2. **Determines the appropriate domain** based on code patterns
+3. **Automatically renames the conflicting file** with a domain-specific suffix
+4. **Proceeds with the original rename** now that the conflict is resolved
+
+### Supported Domain Detection for Plain TypeScript Files
+
+| Domain | Detection Patterns | Example Rename |
+|--------|-------------------|----------------|
+| **Models** | `interface`, `class` with data properties (`id`, `name`, `email`) | `user.ts` → `user-model.ts` |
+| **Types** | `type` definitions, union types, generics | `api.ts` → `api-types.ts` |
+| **Constants** | `const` exports with UPPER_CASE names, configuration objects | `config.ts` → `config-constants.ts` |
+| **Utils** | Utility functions (`format`, `parse`, `calculate`, `transform`) | `helpers.ts` → `helpers-utils.ts` |
+| **Validators** | Validation functions (`validate`, `isValid`, `check`, `verify`) | `form.ts` → `form-validator.ts` |
+| **Factories** | Factory classes/functions (`create`, `build`, `make`) | `user.ts` → `user-factory.ts` |
+| **Enums** | `enum` definitions | `status.ts` → `status-enum.ts` |
+| **Interfaces** | `interface` definitions for contracts | `repository.ts` → `repository-interface.ts` |
+
+### Example Automatic Resolution
+
+```typescript
+// Scenario: Component wants to rename to user.ts, but user.ts already exists
+
+// Existing file: user.ts
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+// Component file: user.component.ts
+@Component({
+  selector: 'app-user',
+  template: '<div>User component</div>'
+})
+export class UserComponent {}
+
+// 🤖 Automatic Resolution:
+// 1. Analyzes user.ts → Detects model patterns (interface with data properties)
+// 2. Renames user.ts → user-model.ts
+// 3. Renames user.component.ts → user.ts
+// ✅ Conflict resolved automatically!
+```
+
+### When Manual Review Is Still Required
+
+The tool falls back to manual review when:
+
+- **Conflicting file has no clear domain** (mixed or unclear patterns)
+- **Conflicting file is another Angular file** (service, component, etc.)
+- **Proposed domain-specific name already exists** (e.g., `user-model.ts` already exists)
+- **File cannot be read** due to permissions or other errors
+
+### Benefits
+
+- 🚀 **Faster refactoring** - Most conflicts resolve automatically
+- 🎯 **Better organization** - Files get appropriate domain-specific names
+- 🛡️ **Safe operations** - Only renames files with clear, confident domain detection
+- 📊 **Full transparency** - All automatic renames are logged with explanations
+
 ### Directive Conventions (Angular 20)
 
 ✅ **Before** (Old Angular):
@@ -296,10 +365,12 @@ Errors: 0
 --- File Renames ---
 /project/src/app/user-profile.component.ts -> /project/src/app/user-profile.ts
   Reason: Angular 20 clean naming: remove .component suffix
-/project/src/app/auth.service.ts -> /project/src/app/auth.ts
-  Reason: Angular 20 clean naming: remove .service suffix
+/project/src/app/auth.service.ts -> /project/src/app/auth-api.ts
+  Reason: Smart service detection: detected HTTP patterns
 /project/src/app/shared.module.ts -> /project/src/app/shared-module.ts
   Reason: Angular 20 hyphenated suffix for modules
+/project/src/app/user.ts -> /project/src/app/user-model.ts
+  Reason: Resolved naming conflict: detected model patterns (auto-resolved)
 
 --- Content Changes ---
 /project/src/app/user-profile.ts:
@@ -318,7 +389,7 @@ Errors: 0
 
 ### Handling Naming Conflicts
 
-When the tool encounters files that would conflict during renaming, it provides detailed warnings and requires manual intervention:
+The tool now features intelligent conflict resolution that automatically resolves most conflicts. When manual intervention is still needed, it provides detailed guidance:
 
 ```bash
 $ ng20-rename ./src/app --verbose
@@ -337,32 +408,35 @@ Manual review required: 2
 Errors: 0
 
 --- File Renames ---
-/project/src/app/auth.service.ts -> /project/src/app/auth.ts
-  Reason: Angular 20 clean naming: remove .service suffix
+/project/src/app/auth.service.ts -> /project/src/app/auth-api.ts
+  Reason: Smart service detection: detected HTTP patterns
 /project/src/app/shared.module.ts -> /project/src/app/shared-module.ts
   Reason: Angular 20 hyphenated suffix for modules
+/project/src/app/user-profile.component.ts -> /project/src/app/user-profile.ts
+  Reason: Angular 20 clean naming: remove .component suffix
+/project/src/app/user-profile.ts -> /project/src/app/user-profile-model.ts
+  Reason: Resolved naming conflict: detected model patterns (auto-resolved)
+/project/src/app/payment.ts -> /project/src/app/payment-utils.ts
+  Reason: Resolved naming conflict: detected utility patterns (auto-resolved)
+/project/src/app/payment.service.ts -> /project/src/app/payment-api.ts
+  Reason: Smart service detection: detected HTTP patterns
 
 --- Content Changes ---
-/project/src/app/auth.ts:
+/project/src/app/user-profile.ts:
   Line 8: Component selector should use kebab-case with app prefix
-    - selector: 'authForm',
-    + selector: 'app-auth-form',
+    - selector: 'userProfile',
+    + selector: 'app-user-profile',
 
 --- Manual Review Required ---
 The following files require manual attention due to naming conflicts:
 
-1. src/app/user-profile.component.ts
-   Desired rename: src/app/user-profile.component.ts -> src/app/user-profile.ts
-   Issue: Cannot rename to user-profile.ts - target file already exists
-   Action needed: Resolve the naming conflict manually
+1. src/app/data.service.ts
+   Desired rename: src/app/data.service.ts -> src/app/data.ts
+   Issue: Cannot rename to data.ts - conflicting file has no clear domain patterns
+   Action needed: Manually resolve the conflict or rename the conflicting file
 
-2. src/app/payment.service.ts
-   Desired rename: src/app/payment.service.ts -> src/app/payment.ts
-   Issue: Cannot rename to payment.ts - target file already exists
-   Action needed: Resolve the naming conflict manually
-
-⚠️  Manual intervention required for 2 files with naming conflicts.
-✅ Other refactoring completed successfully!
+⚠️  Manual intervention required for 1 file with unresolvable naming conflict.
+✅ Most conflicts were automatically resolved! Other refactoring completed successfully!
 ```
 
 ### Dry Run Mode
@@ -588,6 +662,16 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Built with TypeScript and modern Node.js tooling
 
 ## Changelog
+
+### v1.1.0
+
+- 🤖 **Intelligent Conflict Resolution**: Automatically resolves naming conflicts by analyzing file content and applying smart renaming strategies
+- 🎯 **Enhanced Domain Detection**: Improved TypeScript domain detection for models, types, constants, utils, validators, factories, enums, and interfaces
+- 🔧 **Better File Type Detection**: Fixed resolver, guard, and interceptor detection to prevent misclassification as services
+- 🚀 **Reduced Manual Intervention**: Most conflicts now resolve automatically, significantly reducing manual review requirements
+- 🛡️ **Safer Operations**: Conflict resolution only renames files with high-confidence domain detection
+- 📊 **Transparent Logging**: All automatic conflict resolutions are logged with detailed explanations
+- ✅ **Comprehensive Test Coverage**: Added extensive tests for conflict resolution scenarios
 
 ### v1.0.0
 
