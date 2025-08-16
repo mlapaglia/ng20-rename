@@ -1,8 +1,9 @@
 import { basename, dirname, join, extname } from 'path';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { RenameRule, RuleResult } from './base-rule';
 import { AngularFile, AngularFileType } from '../types';
 import { ServiceDomainDetector } from './service-domain-detector';
+import { TsFileDomainDetector } from './ts-file-domain-detector';
 
 /**
  * Rule to ensure file names follow Angular 20 naming conventions:
@@ -50,18 +51,40 @@ export class FileNamingRule extends RenameRule {
     // Check for naming conflicts before renaming
     const newPath = join(fileDir, expectedFileName);
     if (existsSync(newPath) && newPath !== file.path) {
-      // Target file already exists - add to manual review list
-      return {
-        manualReviewRequired: [
-          {
-            filePath: file.path,
-            desiredNewPath: newPath,
-            reason: `Cannot rename to ${expectedFileName} - target file already exists`,
-            conflictType: 'naming_conflict'
-          }
-        ],
-        reason: `Skipped rename due to conflict: ${currentFileName} -> ${expectedFileName} (target file already exists)`
-      };
+      // Try to resolve conflict automatically by renaming the conflicting file
+      const conflictResolution = this.attemptConflictResolution(newPath, file.type);
+      
+
+      
+      if (conflictResolution.resolved) {
+        // We can resolve the conflict - add the conflicting file rename to additional renames
+        const result: RuleResult = {
+          newFileName: newPath,
+          reason: `File name should follow Angular 20 conventions: ${currentFileName} -> ${expectedFileName}`,
+          additionalRenames: [conflictResolution.conflictingFileRename!]
+        };
+
+        // For components, also rename associated files (HTML, CSS, LESS, SCSS, spec)
+        if (file.type === AngularFileType.COMPONENT) {
+          const associatedRenames = this.getAssociatedFileRenames(file.path, fileNameWithoutExt, className);
+          result.additionalRenames = result.additionalRenames!.concat(associatedRenames);
+        }
+
+        return result;
+      } else {
+        // Target file already exists and we can't resolve it - add to manual review list
+        return {
+          manualReviewRequired: [
+            {
+              filePath: file.path,
+              desiredNewPath: newPath,
+              reason: `Cannot rename to ${expectedFileName} - target file already exists${conflictResolution.reason ? ` (${conflictResolution.reason})` : ''}`,
+              conflictType: 'naming_conflict'
+            }
+          ],
+          reason: `Skipped rename due to conflict: ${currentFileName} -> ${expectedFileName} (target file already exists)`
+        };
+      }
     }
 
     // File name doesn't match expected Angular 20 naming convention
@@ -153,7 +176,7 @@ export class FileNamingRule extends RenameRule {
   }
 
   private getTypeSuffix(fileType: AngularFileType, fileContent?: string): string {
-    // For services, use smart domain detection if enabled
+    // For services, use smart domain detection if enabled (but not for resolvers, guards, interceptors, etc.)
     if (fileType === AngularFileType.SERVICE && this.smartServices && fileContent) {
       const detectedDomain = ServiceDomainDetector.detectDomain(fileContent);
       if (detectedDomain) {
@@ -226,5 +249,106 @@ export class FileNamingRule extends RenameRule {
     }
 
     return renames;
+  }
+
+  /**
+   * Attempts to resolve a naming conflict by intelligently renaming the conflicting file
+   */
+  private attemptConflictResolution(conflictingFilePath: string, requestingFileType: AngularFileType): {
+    resolved: boolean;
+    conflictingFileRename?: { oldPath: string; newPath: string; reason: string };
+    reason?: string;
+  } {
+
+    
+    // Only attempt to resolve conflicts with plain .ts files (OTHER type)
+    if (!existsSync(conflictingFilePath) || !conflictingFilePath.endsWith('.ts')) {
+      return { resolved: false, reason: 'conflicting file is not a plain TypeScript file' };
+    }
+
+    try {
+      // Read the conflicting file to analyze its content
+      const conflictingFileContent = readFileSync(conflictingFilePath, 'utf-8');
+      
+      // Determine if it's a plain TypeScript file (not an Angular file)
+      const conflictingFileType = this.determineFileTypeFromContent(conflictingFileContent);
+      
+      if (conflictingFileType !== AngularFileType.OTHER) {
+        return { resolved: false, reason: `conflicting file is a ${conflictingFileType}, not a plain TypeScript file` };
+      }
+
+      // Use the TypeScript domain detector to suggest a better name
+      const detectedDomain = TsFileDomainDetector.detectDomain(conflictingFileContent);
+      
+      if (!detectedDomain) {
+        return { resolved: false, reason: 'could not determine appropriate domain for conflicting file' };
+      }
+
+      // Generate the new name for the conflicting file
+      const conflictingFileDir = dirname(conflictingFilePath);
+      const conflictingFileNameWithoutExt = basename(conflictingFilePath, '.ts');
+      const newConflictingFileName = `${conflictingFileNameWithoutExt}${detectedDomain}.ts`;
+      const newConflictingFilePath = join(conflictingFileDir, newConflictingFileName);
+
+      // Make sure the new name doesn't conflict with anything else
+      if (existsSync(newConflictingFilePath)) {
+        return { resolved: false, reason: `proposed name ${newConflictingFileName} already exists` };
+      }
+
+      // Success! We can resolve the conflict
+      return {
+        resolved: true,
+        conflictingFileRename: {
+          oldPath: conflictingFilePath,
+          newPath: newConflictingFilePath,
+          reason: `Resolved naming conflict: ${basename(conflictingFilePath)} -> ${newConflictingFileName} (detected domain: ${detectedDomain.replace('-', '')})`
+        }
+      };
+
+    } catch (error) {
+      return { resolved: false, reason: `failed to read conflicting file: ${error instanceof Error ? error.message : String(error)}` };
+    }
+  }
+
+  /**
+   * Determines file type from content analysis (similar to FileDiscovery but for conflict resolution)
+   */
+  private determineFileTypeFromContent(content: string): AngularFileType {
+    if (content.includes('@Component') || 
+        /export\s+class\s+\w*Component\s*{/.test(content) ||
+        content.includes('templateUrl') ||
+        content.includes('styleUrls')) {
+      return AngularFileType.COMPONENT;
+    }
+
+    if (content.includes('@Injectable')) {
+      return AngularFileType.SERVICE;
+    }
+
+    if (content.includes('@Directive')) {
+      return AngularFileType.DIRECTIVE;
+    }
+
+    if (content.includes('@Pipe')) {
+      return AngularFileType.PIPE;
+    }
+
+    if (content.includes('@NgModule')) {
+      return AngularFileType.MODULE;
+    }
+
+    if (content.includes('CanActivate') || content.includes('CanLoad')) {
+      return AngularFileType.GUARD;
+    }
+
+    if (content.includes('HttpInterceptor')) {
+      return AngularFileType.INTERCEPTOR;
+    }
+
+    if (content.includes('Resolve')) {
+      return AngularFileType.RESOLVER;
+    }
+
+    return AngularFileType.OTHER;
   }
 }

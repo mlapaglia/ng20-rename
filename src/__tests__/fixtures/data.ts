@@ -1,0 +1,13 @@
+// Plain TypeScript file with no clear domain - should cause manual review
+const x = 5;
+const y = 10;
+
+function doSomething() {
+  return x + y;
+}
+
+function anotherFunction() {
+  console.log('Hello world');
+}
+
+export { doSomething, anotherFunction };

@@ -19,6 +19,19 @@ export class FileProcessor {
       if (rule.shouldApply(file)) {
         const ruleResult = await rule.apply(file);
 
+        // Handle additional file renames FIRST (to clear conflicts)
+        if (ruleResult.additionalRenames) {
+          for (const additionalRename of ruleResult.additionalRenames) {
+            if (existsSync(additionalRename.oldPath)) {
+              if (!this.dryRun) {
+                renameSync(additionalRename.oldPath, additionalRename.newPath);
+              }
+              result.renamedFiles.push(additionalRename);
+            }
+          }
+        }
+
+        // Then handle the main file rename
         if (ruleResult.newFileName && ruleResult.newFileName !== file.path) {
           const renamedFile: RenamedFile = {
             oldPath: file.path,
@@ -32,18 +45,6 @@ export class FileProcessor {
 
           result.renamedFiles.push(renamedFile);
           file.path = ruleResult.newFileName;
-        }
-
-        // Handle additional file renames (associated files like HTML, CSS, spec)
-        if (ruleResult.additionalRenames) {
-          for (const additionalRename of ruleResult.additionalRenames) {
-            if (existsSync(additionalRename.oldPath)) {
-              if (!this.dryRun) {
-                renameSync(additionalRename.oldPath, additionalRename.newPath);
-              }
-              result.renamedFiles.push(additionalRename);
-            }
-          }
         }
 
         // Handle manual review items

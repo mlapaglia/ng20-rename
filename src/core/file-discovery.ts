@@ -66,10 +66,6 @@ export class FileDiscovery {
       return AngularFileType.COMPONENT;
     }
 
-    if (fileName.endsWith('.service.ts') || content.includes('@Injectable')) {
-      return AngularFileType.SERVICE;
-    }
-
     if (fileName.endsWith('.directive.ts') || content.includes('@Directive')) {
       return AngularFileType.DIRECTIVE;
     }
@@ -92,6 +88,10 @@ export class FileDiscovery {
 
     if (fileName.endsWith('.resolver.ts') || content.includes('Resolve')) {
       return AngularFileType.RESOLVER;
+    }
+
+    if (fileName.endsWith('.service.ts') || content.includes('@Injectable')) {
+      return AngularFileType.SERVICE;
     }
 
     return AngularFileType.OTHER;

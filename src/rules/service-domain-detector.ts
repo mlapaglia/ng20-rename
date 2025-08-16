@@ -122,9 +122,9 @@ export class ServiceDomainDetector {
 
     // Only use domain-specific naming if confidence is high enough
     // and significantly better than other options
-    if (bestScore >= 4) {
+    if (bestScore >= 3) {
       const [, secondBestScore] = sortedScores[1] || [null, 0];
-      if (bestScore > secondBestScore + 1) {
+      if (bestScore > secondBestScore) {
         // Clear winner
         return bestSuffix;
       }
