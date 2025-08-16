@@ -48,7 +48,7 @@
   },
   "dependencies": {
     "commander": "^11.1.0",
-    "glob": "^10.3.10",
+    "glob": "^11.0.3",
     "typescript": "^5.3.3",
     "@typescript-eslint/parser": "^6.15.0"
   },
