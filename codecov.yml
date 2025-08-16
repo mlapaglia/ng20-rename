@@ -27,9 +27,11 @@ comment:
   require_head: true
 
 ignore:
+  - "src/__tests__/**/*"
+  - "src/**/*.test.ts"
+  - "src/**/*.spec.ts"
   - "src/cli.ts"
   - "dist/**/*"
   - "coverage/**/*"
   - "jest.config.js"
   - "*.config.*"
-  - "**/*.md"

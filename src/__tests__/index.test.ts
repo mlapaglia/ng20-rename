@@ -5,7 +5,9 @@ import {
   ComponentNamingRule,
   DirectiveNamingRule,
   RefactorOptions,
-  RefactorResult
+  RefactorResult,
+  getVersion,
+  isAngularFile
 } from '../index';
 
 describe('index exports', () => {
@@ -50,5 +52,36 @@ describe('index exports', () => {
       errors: []
     };
     expect(result).toBeDefined();
+  });
+});
+
+describe('utility functions', () => {
+  describe('getVersion', () => {
+    it('should return the current version', () => {
+      expect(getVersion()).toBe('1.2.0');
+    });
+  });
+
+  describe('isAngularFile', () => {
+    it('should return true for Angular component files', () => {
+      expect(isAngularFile('app.component.ts')).toBe(true);
+      expect(isAngularFile('user.service.ts')).toBe(true);
+      expect(isAngularFile('auth.directive.ts')).toBe(true);
+      expect(isAngularFile('currency.pipe.ts')).toBe(true);
+      expect(isAngularFile('app.module.ts')).toBe(true);
+    });
+
+    it('should return false for non-Angular files', () => {
+      expect(isAngularFile('utils.ts')).toBe(false);
+      expect(isAngularFile('config.js')).toBe(false);
+      expect(isAngularFile('styles.css')).toBe(false);
+      expect(isAngularFile('README.md')).toBe(false);
+    });
+
+    it('should handle edge cases', () => {
+      expect(isAngularFile('')).toBe(false);
+      expect(isAngularFile('component.ts')).toBe(false);
+      expect(isAngularFile('my.component.ts.backup')).toBe(false);
+    });
   });
 });
