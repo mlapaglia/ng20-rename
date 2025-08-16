@@ -53,21 +53,21 @@ export class FileNamingRule extends RenameRule {
     if (existsSync(newPath) && newPath !== file.path) {
       // Try to resolve conflict automatically by renaming the conflicting file
       const conflictResolution = this.attemptConflictResolution(newPath, file.type);
-      
 
-      
       if (conflictResolution.resolved) {
         // We can resolve the conflict - add the conflicting file rename to additional renames
         const result: RuleResult = {
           newFileName: newPath,
           reason: `File name should follow Angular 20 conventions: ${currentFileName} -> ${expectedFileName}`,
-          additionalRenames: [conflictResolution.conflictingFileRename!]
+          additionalRenames: [
+            conflictResolution.conflictingFileRename as { oldPath: string; newPath: string; reason: string }
+          ]
         };
 
         // For components, also rename associated files (HTML, CSS, LESS, SCSS, spec)
         if (file.type === AngularFileType.COMPONENT) {
           const associatedRenames = this.getAssociatedFileRenames(file.path, fileNameWithoutExt, className);
-          result.additionalRenames = result.additionalRenames!.concat(associatedRenames);
+          result.additionalRenames = (result.additionalRenames || []).concat(associatedRenames);
         }
 
         return result;
@@ -254,13 +254,14 @@ export class FileNamingRule extends RenameRule {
   /**
    * Attempts to resolve a naming conflict by intelligently renaming the conflicting file
    */
-  private attemptConflictResolution(conflictingFilePath: string, requestingFileType: AngularFileType): {
+  private attemptConflictResolution(
+    conflictingFilePath: string,
+    _requestingFileType: AngularFileType
+  ): {
     resolved: boolean;
     conflictingFileRename?: { oldPath: string; newPath: string; reason: string };
     reason?: string;
   } {
-
-    
     // Only attempt to resolve conflicts with plain .ts files (OTHER type)
     if (!existsSync(conflictingFilePath) || !conflictingFilePath.endsWith('.ts')) {
       return { resolved: false, reason: 'conflicting file is not a plain TypeScript file' };
@@ -269,17 +270,17 @@ export class FileNamingRule extends RenameRule {
     try {
       // Read the conflicting file to analyze its content
       const conflictingFileContent = readFileSync(conflictingFilePath, 'utf-8');
-      
+
       // Determine if it's a plain TypeScript file (not an Angular file)
       const conflictingFileType = this.determineFileTypeFromContent(conflictingFileContent);
-      
+
       if (conflictingFileType !== AngularFileType.OTHER) {
         return { resolved: false, reason: `conflicting file is a ${conflictingFileType}, not a plain TypeScript file` };
       }
 
       // Use the TypeScript domain detector to suggest a better name
       const detectedDomain = TsFileDomainDetector.detectDomain(conflictingFileContent);
-      
+
       if (!detectedDomain) {
         return { resolved: false, reason: 'could not determine appropriate domain for conflicting file' };
       }
@@ -304,9 +305,11 @@ export class FileNamingRule extends RenameRule {
           reason: `Resolved naming conflict: ${basename(conflictingFilePath)} -> ${newConflictingFileName} (detected domain: ${detectedDomain.replace('-', '')})`
         }
       };
-
     } catch (error) {
-      return { resolved: false, reason: `failed to read conflicting file: ${error instanceof Error ? error.message : String(error)}` };
+      return {
+        resolved: false,
+        reason: `failed to read conflicting file: ${error instanceof Error ? error.message : String(error)}`
+      };
     }
   }
 
@@ -314,10 +317,12 @@ export class FileNamingRule extends RenameRule {
    * Determines file type from content analysis (similar to FileDiscovery but for conflict resolution)
    */
   private determineFileTypeFromContent(content: string): AngularFileType {
-    if (content.includes('@Component') || 
-        /export\s+class\s+\w*Component\s*{/.test(content) ||
-        content.includes('templateUrl') ||
-        content.includes('styleUrls')) {
+    if (
+      content.includes('@Component') ||
+      /export\s+class\s+\w*Component\s*{/.test(content) ||
+      content.includes('templateUrl') ||
+      content.includes('styleUrls')
+    ) {
       return AngularFileType.COMPONENT;
     }
 

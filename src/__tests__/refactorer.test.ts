@@ -116,11 +116,13 @@ describe('AngularRefactorer', () => {
       expect(result.processedFiles).toHaveLength(2);
       expect(result.renamedFiles).toHaveLength(2); // Both files should be renamed
       expect(result.manualReviewRequired).toHaveLength(0); // Conflict should be automatically resolved
-      
+
       // Check that the service was renamed to user.ts and the conflicting file to user-model.ts
       const serviceRename = result.renamedFiles.find(r => r.oldPath.includes('user.service.ts'));
-      const conflictRename = result.renamedFiles.find(r => r.oldPath.includes('user.ts') && !r.oldPath.includes('service'));
-      
+      const conflictRename = result.renamedFiles.find(
+        r => r.oldPath.includes('user.ts') && !r.oldPath.includes('service')
+      );
+
       expect(serviceRename?.newPath).toContain('user.ts');
       expect(conflictRename?.newPath).toContain('user-model.ts');
     });

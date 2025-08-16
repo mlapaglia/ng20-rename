@@ -45,8 +45,6 @@ describe('Integration Tests - Complete Angular App Refactoring', () => {
     // Log summary for verification
     console.log('Integration test completed successfully!');
 
-
-
     // Verify specific transformations
     verifyComponentTransformations();
     verifyServiceTransformations();

@@ -47,8 +47,10 @@ describe('Conflict Resolution Integration Tests', () => {
     // Check the result
     expect(result.renamedFiles).toHaveLength(2);
     const componentRename = result.renamedFiles.find((r: RenamedFile) => r.oldPath.includes('user.component.ts'));
-    const conflictRename = result.renamedFiles.find((r: RenamedFile) => r.oldPath.includes('user.ts') && r.newPath.includes('user-model.ts'));
-    
+    const conflictRename = result.renamedFiles.find(
+      (r: RenamedFile) => r.oldPath.includes('user.ts') && r.newPath.includes('user-model.ts')
+    );
+
     expect(componentRename).toBeDefined();
     expect(conflictRename).toBeDefined();
     expect(conflictRename?.reason).toContain('Resolved naming conflict');
@@ -70,8 +72,6 @@ describe('Conflict Resolution Integration Tests', () => {
     const refactorer = new AngularRefactorer(options);
     const result = await refactorer.refactor();
 
-
-
     // Check that auth.service.ts was renamed to auth.ts
     expect(fs.existsSync(path.join(tempDir, 'auth.ts'))).toBe(true);
     expect(fs.existsSync(path.join(tempDir, 'auth.service.ts'))).toBe(false);
@@ -81,9 +81,13 @@ describe('Conflict Resolution Integration Tests', () => {
 
     // Check the result
     expect(result.renamedFiles).toHaveLength(2);
-    const serviceRename = result.renamedFiles.find((r: RenamedFile) => r.oldPath.includes('auth.service.ts') && r.newPath.includes('auth.ts'));
-    const conflictRename = result.renamedFiles.find((r: RenamedFile) => r.oldPath.includes('auth.ts') && r.newPath.includes('auth-config.ts'));
-    
+    const serviceRename = result.renamedFiles.find(
+      (r: RenamedFile) => r.oldPath.includes('auth.service.ts') && r.newPath.includes('auth.ts')
+    );
+    const conflictRename = result.renamedFiles.find(
+      (r: RenamedFile) => r.oldPath.includes('auth.ts') && r.newPath.includes('auth-config.ts')
+    );
+
     expect(serviceRename).toBeDefined();
     expect(conflictRename).toBeDefined();
     expect(conflictRename?.reason).toContain('Resolved naming conflict');
@@ -105,8 +109,6 @@ describe('Conflict Resolution Integration Tests', () => {
     const refactorer = new AngularRefactorer(options);
     const result = await refactorer.refactor();
 
-
-
     // Check that payment.service.ts was renamed to payment-api.ts (smart service detection)
     expect(fs.existsSync(path.join(tempDir, 'payment-api.ts'))).toBe(true);
     expect(fs.existsSync(path.join(tempDir, 'payment.service.ts'))).toBe(false);
@@ -118,7 +120,7 @@ describe('Conflict Resolution Integration Tests', () => {
     // Check the result - only 1 rename should happen (service)
     expect(result.renamedFiles).toHaveLength(1);
     const serviceRename = result.renamedFiles.find((r: RenamedFile) => r.oldPath.includes('payment.service.ts'));
-    
+
     expect(serviceRename).toBeDefined();
     expect(serviceRename?.newPath).toContain('payment-api.ts');
     expect(result.manualReviewRequired).toHaveLength(0);
@@ -150,7 +152,7 @@ describe('Conflict Resolution Integration Tests', () => {
     // Check the result - only 1 rename should happen (service)
     expect(result.renamedFiles).toHaveLength(1);
     const serviceRename = result.renamedFiles.find((r: RenamedFile) => r.oldPath.includes('data.service.ts'));
-    
+
     expect(serviceRename).toBeDefined();
     expect(serviceRename?.newPath).toContain('data-cache.ts');
     expect(result.manualReviewRequired).toHaveLength(0);
@@ -183,7 +185,7 @@ describe('Conflict Resolution Integration Tests', () => {
     // Check the result - only 1 rename should happen (service)
     expect(result.renamedFiles).toHaveLength(1);
     const serviceRename = result.renamedFiles.find((r: RenamedFile) => r.oldPath.includes('product.service.ts'));
-    
+
     expect(serviceRename).toBeDefined();
     expect(serviceRename?.newPath).toContain('product-api.ts');
     expect(result.manualReviewRequired).toHaveLength(0);
@@ -213,8 +215,10 @@ describe('Conflict Resolution Integration Tests', () => {
     // But the result should show what would be renamed
     expect(result.renamedFiles).toHaveLength(2);
     const componentRename = result.renamedFiles.find((r: RenamedFile) => r.oldPath.includes('user.component.ts'));
-    const conflictRename = result.renamedFiles.find((r: RenamedFile) => r.oldPath.includes('user.ts') && r.newPath.includes('user-model.ts'));
-    
+    const conflictRename = result.renamedFiles.find(
+      (r: RenamedFile) => r.oldPath.includes('user.ts') && r.newPath.includes('user-model.ts')
+    );
+
     expect(componentRename).toBeDefined();
     expect(conflictRename).toBeDefined();
   });
