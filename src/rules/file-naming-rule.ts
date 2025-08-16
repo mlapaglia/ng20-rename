@@ -52,7 +52,7 @@ export class FileNamingRule extends RenameRule {
     const newPath = join(fileDir, expectedFileName);
     if (existsSync(newPath) && newPath !== file.path) {
       // Try to resolve conflict automatically by renaming the conflicting file
-      const conflictResolution = this.attemptConflictResolution(newPath, file.type);
+      const conflictResolution = this.attemptConflictResolution(newPath);
 
       if (conflictResolution.resolved) {
         // We can resolve the conflict - add the conflicting file rename to additional renames
@@ -254,10 +254,7 @@ export class FileNamingRule extends RenameRule {
   /**
    * Attempts to resolve a naming conflict by intelligently renaming the conflicting file
    */
-  private attemptConflictResolution(
-    conflictingFilePath: string,
-    _requestingFileType: AngularFileType
-  ): {
+  private attemptConflictResolution(conflictingFilePath: string): {
     resolved: boolean;
     conflictingFileRename?: { oldPath: string; newPath: string; reason: string };
     reason?: string;
