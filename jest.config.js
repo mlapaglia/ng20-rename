@@ -10,6 +10,7 @@ module.exports = {
   collectCoverageFrom: ['src/**/*.ts', '!src/**/*.test.ts', '!src/**/*.spec.ts', '!src/cli.ts', '!src/__tests__/fixtures/**/*'],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
+  reporters: ['default'],
   coverageThreshold: {
     global: {
       branches: 80,
