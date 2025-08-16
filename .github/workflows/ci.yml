@@ -35,9 +35,9 @@ jobs:
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
-        if: matrix.node-version == '20.x'
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          flags: unittests
           files: ./coverage/lcov.info
           fail_ci_if_error: false
           verbose: true
