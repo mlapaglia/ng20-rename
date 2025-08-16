@@ -19,8 +19,18 @@ program
   .option('-v, --verbose', 'Show verbose output', false)
   .option('-i, --include <patterns...>', 'File patterns to include', ['**/*.ts', '**/*.html', '**/*.css', '**/*.scss'])
   .option('-e, --exclude <patterns...>', 'File patterns to exclude', ['node_modules/**', 'dist/**', '**/*.spec.ts'])
+  .option('--disable-smart-services', 'Disable smart domain detection for services', false)
   .action(
-    async (directory: string, options: { dryRun: boolean; verbose: boolean; include: string[]; exclude: string[] }) => {
+    async (
+      directory: string,
+      options: {
+        dryRun: boolean;
+        verbose: boolean;
+        include: string[];
+        exclude: string[];
+        disableSmartServices: boolean;
+      }
+    ) => {
       try {
         const rootDir = resolve(directory);
 
@@ -42,7 +52,8 @@ program
           include: options.include,
           exclude: options.exclude,
           dryRun: options.dryRun,
-          verbose: options.verbose
+          verbose: options.verbose,
+          smartServices: !options.disableSmartServices // Enabled by default, disabled by flag
         };
 
         const refactorer = new AngularRefactorer(refactorOptions);

@@ -2,6 +2,7 @@ import { basename, dirname, join, extname } from 'path';
 import { existsSync } from 'fs';
 import { RenameRule, RuleResult } from './base-rule';
 import { AngularFile, AngularFileType } from '../types';
+import { ServiceDomainDetector } from './service-domain-detector';
 
 /**
  * Rule to ensure file names follow Angular 20 naming conventions:
@@ -14,6 +15,13 @@ import { AngularFile, AngularFileType } from '../types';
 export class FileNamingRule extends RenameRule {
   readonly name = 'file-naming';
   readonly description = 'Ensures file names follow Angular 20 naming conventions: clean, concise, kebab-case';
+
+  private smartServices: boolean;
+
+  constructor(smartServices: boolean = true) {
+    super();
+    this.smartServices = smartServices;
+  }
 
   shouldApply(file: AngularFile): boolean {
     // Don't apply to spec files or stylesheets as they have different conventions
@@ -33,7 +41,7 @@ export class FileNamingRule extends RenameRule {
       return {}; // No class found, nothing to rename
     }
 
-    const expectedFileName = this.getExpectedFileName(className, file.type, fileExt);
+    const expectedFileName = this.getExpectedFileName(className, file.type, fileExt, file.content);
 
     if (currentFileName === expectedFileName) {
       return {}; // Already correctly named
@@ -70,7 +78,12 @@ export class FileNamingRule extends RenameRule {
     return result;
   }
 
-  private getExpectedFileName(className: string, fileType: AngularFileType, extension: string): string {
+  private getExpectedFileName(
+    className: string,
+    fileType: AngularFileType,
+    extension: string,
+    fileContent?: string
+  ): string {
     // Remove type suffix from class name (e.g., UserProfileComponent -> UserProfile)
     const baseName = this.removeClassTypeSuffix(className, fileType);
 
@@ -78,7 +91,7 @@ export class FileNamingRule extends RenameRule {
     const kebabName = this.toKebabCase(baseName);
 
     // Add appropriate suffix based on file type
-    const suffix = this.getTypeSuffix(fileType);
+    const suffix = this.getTypeSuffix(fileType, fileContent);
 
     return `${kebabName}${suffix}${extension}`;
   }
@@ -139,7 +152,15 @@ export class FileNamingRule extends RenameRule {
     return fileName;
   }
 
-  private getTypeSuffix(fileType: AngularFileType): string {
+  private getTypeSuffix(fileType: AngularFileType, fileContent?: string): string {
+    // For services, use smart domain detection if enabled
+    if (fileType === AngularFileType.SERVICE && this.smartServices && fileContent) {
+      const detectedDomain = ServiceDomainDetector.detectDomain(fileContent);
+      if (detectedDomain) {
+        return detectedDomain;
+      }
+    }
+
     // Angular 20 naming conventions: Clean and concise file names
     const suffixes: Record<AngularFileType, string> = {
       // No suffixes for components, directives, and services (Angular 20)

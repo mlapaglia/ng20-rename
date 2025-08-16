@@ -81,4 +81,114 @@ describe('FileNamingRule', () => {
       expect(result.newFileName).toBeUndefined();
     });
   });
+
+  describe('edge cases and suffix handling', () => {
+    it('should handle pipe files with old suffix', async () => {
+      const rule = new FileNamingRule();
+      const file: AngularFile = {
+        path: '/test/currency.pipe.ts',
+        content: 'export class CurrencyPipe {}',
+        type: AngularFileType.PIPE
+      };
+
+      const result = await rule.apply(file);
+      expect(result.newFileName).toContain('currency-pipe.ts');
+    });
+
+    it('should handle module files with old suffix', async () => {
+      const rule = new FileNamingRule();
+      const file: AngularFile = {
+        path: '/test/shared.module.ts',
+        content: 'export class SharedModule {}',
+        type: AngularFileType.MODULE
+      };
+
+      const result = await rule.apply(file);
+      expect(result.newFileName).toContain('shared-module.ts');
+    });
+
+    it('should handle guard files with old suffix', async () => {
+      const rule = new FileNamingRule();
+      const file: AngularFile = {
+        path: '/test/auth.guard.ts',
+        content: 'export class AuthGuard {}',
+        type: AngularFileType.GUARD
+      };
+
+      const result = await rule.apply(file);
+      expect(result.newFileName).toContain('auth-guard.ts');
+    });
+
+    it('should handle interceptor files with old suffix', async () => {
+      const rule = new FileNamingRule();
+      const file: AngularFile = {
+        path: '/test/auth.interceptor.ts',
+        content: 'export class AuthInterceptor {}',
+        type: AngularFileType.INTERCEPTOR
+      };
+
+      const result = await rule.apply(file);
+      expect(result.newFileName).toContain('auth-interceptor.ts');
+    });
+
+    it('should handle resolver files with old suffix', async () => {
+      const rule = new FileNamingRule();
+      const file: AngularFile = {
+        path: '/test/data.resolver.ts',
+        content: 'export class DataResolver {}',
+        type: AngularFileType.RESOLVER
+      };
+
+      const result = await rule.apply(file);
+      expect(result.newFileName).toContain('data-resolver.ts');
+    });
+
+    it('should handle files that already have new suffix', async () => {
+      const rule = new FileNamingRule();
+      const file: AngularFile = {
+        path: '/test/currency-pipe.ts',
+        content: 'export class CurrencyPipe {}',
+        type: AngularFileType.PIPE
+      };
+
+      const result = await rule.apply(file);
+      expect(result.newFileName).toBeUndefined(); // No change needed
+    });
+
+    it('should handle HTML template files', async () => {
+      const rule = new FileNamingRule();
+      const file: AngularFile = {
+        path: '/test/user-profile.html',
+        content: '<div>Template</div>',
+        type: AngularFileType.HTML_TEMPLATE
+      };
+
+      const result = await rule.apply(file);
+      expect(result.newFileName).toBeUndefined(); // No change needed for HTML
+    });
+
+    it('should handle stylesheet files', async () => {
+      const rule = new FileNamingRule();
+      const file: AngularFile = {
+        path: '/test/user-profile.css',
+        content: '.container { color: red; }',
+        type: AngularFileType.STYLESHEET
+      };
+
+      const result = await rule.apply(file);
+      expect(result.newFileName).toBeUndefined(); // No change needed for CSS
+    });
+
+    it('should handle other file types', async () => {
+      const rule = new FileNamingRule();
+      const file: AngularFile = {
+        path: '/test/utils.ts',
+        content: 'export const utils = {};',
+        type: AngularFileType.OTHER
+      };
+
+      const result = await rule.apply(file);
+      expect(result.newFileName).toBeUndefined(); // No change needed for other types
+    });
+  });
 });

@@ -11,10 +11,12 @@ A TypeScript package to refactor Angular applications to use the latest **Angula
 ✨ **Angular 20 Ready**: Implements the latest Angular 20 naming conventions with clean, concise file names
 
 - 🔄 **Modern File Naming**: Clean file names without redundant suffixes (components, services, directives)
+- 🧠 **Smart Domain Detection**: Automatically detects service patterns and suggests domain-specific names (`-api`, `-store`, `-notifications`, etc.)
 - 🏷️ **Component Selectors**: Ensures component selectors use kebab-case with app prefix
 - 📝 **Class Names**: Validates and fixes class names to use PascalCase with proper suffixes
 - 🎯 **Directive Selectors**: Ensures directive selectors use camelCase with app prefix
 - 🔍 **Template & Style URLs**: Updates URLs to match Angular 20 file naming (no `.component` suffix)
+- ⚠️ **Conflict Detection**: Identifies naming conflicts and provides manual review guidance
 - 🧪 **Dry Run Mode**: Preview changes before applying them
 - 📊 **Detailed Reporting**: Shows exactly what will be changed and why
 
@@ -61,7 +63,8 @@ import { AngularRefactorer } from 'ng20-rename';
 const refactorer = new AngularRefactorer({
   rootDir: './src/app',
   dryRun: false,
-  verbose: true
+  verbose: true,
+  smartServices: true // Enable smart domain detection (default)
 });
 
 const result = await refactorer.refactor();
@@ -94,13 +97,14 @@ if (result.errors.length > 0) {
 
 ## Command Line Options
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `<directory>` | Directory to scan for Angular files | Required |
-| `-d, --dry-run` | Perform a dry run without making changes | `false` |
-| `-v, --verbose` | Show verbose output | `false` |
-| `-i, --include <patterns...>` | File patterns to include | `["**/*.ts", "**/*.html", "**/*.css", "**/*.scss"]` |
-| `-e, --exclude <patterns...>` | File patterns to exclude | `["node_modules/**", "dist/**", "**/*.spec.ts"]` |
+| Option                        | Description                              | Default                                             |
+| ----------------------------- | ---------------------------------------- | --------------------------------------------------- |
+| `<directory>`                 | Directory to scan for Angular files      | Required                                            |
+| `-d, --dry-run`               | Perform a dry run without making changes | `false`                                             |
+| `-v, --verbose`               | Show verbose output                      | `false`                                             |
+| `-i, --include <patterns...>` | File patterns to include                 | `["**/*.ts", "**/*.html", "**/*.css", "**/*.scss"]` |
+| `-e, --exclude <patterns...>` | File patterns to exclude                 | `["node_modules/**", "dist/**", "**/*.spec.ts"]`    |
+| `--disable-smart-services`    | Disable smart domain detection for services | `false` (smart services enabled by default)        |
 
 ## Angular 20 Naming Conventions Applied
 
@@ -111,25 +115,27 @@ Angular 20 introduces **clean and concise** file names by removing redundant suf
 ✅ **Components, Services & Directives**: No suffixes needed  
 ✅ **Other Types**: Hyphenated suffixes for clarity
 
-| File Type | Before (Old Angular) | After (Angular 20) |
-|-----------|---------------------|-------------------|
-| **Components** | `user-profile.component.ts` | `user-profile.ts` |
-| **Services** | `auth.service.ts` | `auth.ts` or `auth-store.ts` |
-| **Directives** | `highlight.directive.ts` | `highlight.ts` |
-| **Pipes** | `currency.pipe.ts` | `currency-pipe.ts` |
-| **Modules** | `shared.module.ts` | `shared-module.ts` |
-| **Guards** | `auth.guard.ts` | `auth-guard.ts` |
-| **Interceptors** | `auth.interceptor.ts` | `auth-interceptor.ts` |
-| **Resolvers** | `data.resolver.ts` | `data-resolver.ts` |
+| File Type        | Before (Old Angular)        | After (Angular 20)           |
+| ---------------- | --------------------------- | ---------------------------- |
+| **Components**   | `user-profile.component.ts` | `user-profile.ts`            |
+| **Services**     | `auth.service.ts`           | `auth.ts` or `auth-store.ts` |
+| **Directives**   | `highlight.directive.ts`    | `highlight.ts`               |
+| **Pipes**        | `currency.pipe.ts`          | `currency-pipe.ts`           |
+| **Modules**      | `shared.module.ts`          | `shared-module.ts`           |
+| **Guards**       | `auth.guard.ts`             | `auth-guard.ts`              |
+| **Interceptors** | `auth.interceptor.ts`       | `auth-interceptor.ts`        |
+| **Resolvers**    | `data.resolver.ts`          | `data-resolver.ts`           |
 
 ### Key Benefits:
+
 - 📦 **Cleaner file structure** with less redundancy
-- 🚀 **Faster navigation** in IDEs and file explorers  
+- 🚀 **Faster navigation** in IDEs and file explorers
 - 🎯 **Modern Angular practices** following latest conventions
 
 ### Component Conventions (Angular 20)
 
 ✅ **Before** (Old Angular):
+
 ```typescript
 // File: user-profile.component.ts
 @Component({
@@ -137,21 +143,23 @@ Angular 20 introduces **clean and concise** file names by removing redundant suf
   templateUrl: './UserProfile.component.html',
   styleUrls: ['./UserProfile.component.css']
 })
-export class userProfile { }
+export class userProfile {}
 ```
 
 ✅ **After** (Angular 20):
-```typescript  
+
+```typescript
 // File: user-profile.ts (no .component suffix!)
 @Component({
   selector: 'app-user-profile',
-  templateUrl: './user-profile.html',      // No .component in URL
-  styleUrls: ['./user-profile.css']       // No .component in URL
+  templateUrl: './user-profile.html', // No .component in URL
+  styleUrls: ['./user-profile.css'] // No .component in URL
 })
-export class UserProfileComponent { }
+export class UserProfileComponent {}
 ```
 
 **Key Changes:**
+
 - 📁 **File name**: `user-profile.component.ts` → `user-profile.ts`
 - 🔗 **Template URL**: `./user-profile.component.html` → `./user-profile.html`
 - 🎨 **Style URL**: `./user-profile.component.css` → `./user-profile.css`
@@ -159,52 +167,101 @@ export class UserProfileComponent { }
 ### Service Conventions (Angular 20)
 
 ✅ **Before** (Old Angular):
+
 ```typescript
 // File: auth.service.ts
 @Injectable({
   providedIn: 'root'
 })
-export class AuthService { }
+export class AuthService {}
 ```
 
 ✅ **After** (Angular 20):
+
 ```typescript
 // File: auth.ts (no .service suffix!)
 // OR: auth-store.ts, auth-api.ts (domain-specific names)
 @Injectable({
-  providedIn: 'root'  
+  providedIn: 'root'
 })
-export class AuthService { }
+export class AuthService {}
+```
+
+### 🧠 Smart Domain Detection for Services
+
+**NEW**: The tool automatically analyzes service code to suggest domain-specific naming based on usage patterns:
+
+| Domain Pattern | Example Names | Detection Criteria |
+|----------------|---------------|-------------------|
+| **API Services** | `user-api.ts`, `data-api.ts` | HttpClient usage, REST methods (get, post, put, delete) |
+| **State Stores** | `user-store.ts`, `cart-store.ts` | State management, signals, BehaviorSubject, NgRx patterns |
+| **Notifications** | `toast-notifications.ts`, `alert-notifications.ts` | MatSnackBar, ToastrService, notification methods |
+| **External Clients** | `stripe-client.ts`, `firebase-client.ts` | Third-party integrations, SDK wrappers |
+| **Cache Services** | `data-cache.ts`, `user-cache.ts` | Caching patterns, localStorage, memory storage |
+| **Validators** | `form-validator.ts`, `input-validator.ts` | Validation logic, Angular Forms patterns |
+
+**Example Smart Detection:**
+
+```typescript
+// File: notification.service.ts
+import { Injectable, inject } from '@angular/core';
+import { MatSnackBar } from '@angular/material/snack-bar';
+
+@Injectable({ providedIn: 'root' })
+export class NotificationService {
+  private snackBar = inject(MatSnackBar);
+  
+  show(message: string) {
+    this.snackBar.open(message);
+  }
+}
+
+// 🧠 Smart detection → Renames to: notification-notifications.ts
+// Reason: Detected MatSnackBar usage and notification patterns
+```
+
+**Control Smart Detection:**
+
+```bash
+# Enable smart services (default)
+ng20-rename ./src/app
+
+# Disable smart services (use generic naming)
+ng20-rename ./src/app --disable-smart-services
 ```
 
 ### Directive Conventions (Angular 20)
 
 ✅ **Before** (Old Angular):
+
 ```typescript
 // File: highlight.directive.ts
 @Directive({
   selector: '[highlight]'
 })
-export class highlight { }
+export class highlight {}
 ```
 
 ✅ **After** (Angular 20):
+
 ```typescript
 // File: highlight.ts (no .directive suffix!)
 @Directive({
   selector: '[appHighlight]'
 })
-export class HighlightDirective { }
+export class HighlightDirective {}
 ```
 
 ## Supported Angular File Types
 
 ### 🎯 Angular 20 Clean Naming:
+
 - 🔸 **Components** (`.ts` - no suffix!)
-- 🔸 **Services** (`.ts` - no suffix!)  
+- 🔸 **Services** (`.ts` - no suffix!)
 - 🔸 **Directives** (`.ts` - no suffix!)
 
 ### 🔗 Hyphenated Suffixes:
+
 - 🔸 **Pipes** (`-pipe.ts`)
 - 🔸 **Modules** (`-module.ts`)
 - 🔸 **Guards** (`-guard.ts`)
@@ -212,6 +269,7 @@ export class HighlightDirective { }
 - 🔸 **Resolvers** (`-resolver.ts`)
 
 ### 📄 Assets:
+
 - 🔸 **Templates** (`.html`)
 - 🔸 **Stylesheets** (`.css`, `.scss`, `.sass`)
 
@@ -238,7 +296,7 @@ Errors: 0
 --- File Renames ---
 /project/src/app/user-profile.component.ts -> /project/src/app/user-profile.ts
   Reason: Angular 20 clean naming: remove .component suffix
-/project/src/app/auth.service.ts -> /project/src/app/auth.ts  
+/project/src/app/auth.service.ts -> /project/src/app/auth.ts
   Reason: Angular 20 clean naming: remove .service suffix
 /project/src/app/shared.module.ts -> /project/src/app/shared-module.ts
   Reason: Angular 20 hyphenated suffix for modules
@@ -251,7 +309,7 @@ Errors: 0
   Line 4: Template URL should match Angular 20 naming
     - templateUrl: './user-profile.component.html',
     + templateUrl: './user-profile.html',
-  Line 5: Style URL should match Angular 20 naming  
+  Line 5: Style URL should match Angular 20 naming
     - styleUrls: ['./user-profile.component.css'],
     + styleUrls: ['./user-profile.css'],
 
@@ -267,7 +325,7 @@ $ ng20-rename ./src/app --verbose
 
 Starting Angular refactoring in: /project/src/app
 Dry run: No
-Include patterns: **/*.ts, **/*.html, **/*.css, **/*.scss  
+Include patterns: **/*.ts, **/*.html, **/*.css, **/*.scss
 Exclude patterns: node_modules/**, dist/**, **/*.spec.ts
 ---
 
@@ -298,7 +356,7 @@ The following files require manual attention due to naming conflicts:
    Issue: Cannot rename to user-profile.ts - target file already exists
    Action needed: Resolve the naming conflict manually
 
-2. src/app/payment.service.ts  
+2. src/app/payment.service.ts
    Desired rename: src/app/payment.service.ts -> src/app/payment.ts
    Issue: Cannot rename to payment.ts - target file already exists
    Action needed: Resolve the naming conflict manually
@@ -335,7 +393,7 @@ Errors: 0
 
 --- Manual Review Required ---
 1. src/app/data.service.ts
-   Desired rename: src/app/data.service.ts -> src/app/data.ts  
+   Desired rename: src/app/data.service.ts -> src/app/data.ts
    Issue: Cannot rename to data.ts - target file already exists
    Action needed: Resolve the naming conflict manually
 
@@ -350,6 +408,7 @@ Run without --dry-run to apply changes.
 The tool detects and prevents potentially destructive file operations by identifying naming conflicts before they occur:
 
 #### 1. **Existing Target Files**
+
 When a file needs to be renamed to a name that already exists:
 
 ```bash
@@ -366,12 +425,13 @@ src/app/user-profile.ts            # Already exists!
 ```
 
 #### 2. **Associated File Conflicts**
+
 Components with multiple associated files (HTML, CSS, spec) may have partial conflicts:
 
 ```bash
 # Scenario: Component files with mixed naming
 src/app/login.component.ts         # Needs renaming
-src/app/login.component.html       # Needs renaming  
+src/app/login.component.html       # Needs renaming
 src/app/login.css                  # Already exists - conflict!
 src/app/login.component.css        # Needs renaming to login.css
 
@@ -427,11 +487,12 @@ Main class for performing Angular refactoring operations.
 
 ```typescript
 interface RefactorOptions {
-  rootDir: string;           // Directory to scan
-  include?: string[];        // File patterns to include
-  exclude?: string[];        // File patterns to exclude
-  dryRun?: boolean;          // Preview mode
-  verbose?: boolean;         // Detailed output
+  rootDir: string; // Directory to scan
+  include?: string[]; // File patterns to include
+  exclude?: string[]; // File patterns to exclude
+  dryRun?: boolean; // Preview mode
+  verbose?: boolean; // Detailed output
+  smartServices?: boolean; // Enable smart domain detection for services (default: true)
 }
 ```
 
@@ -443,17 +504,17 @@ interface RefactorOptions {
 
 ```typescript
 interface RefactorResult {
-  processedFiles: string[];           // Files that were processed
-  renamedFiles: RenamedFile[];        // Files that were renamed
-  contentChanges: ContentChange[];    // Content modifications
+  processedFiles: string[]; // Files that were processed
+  renamedFiles: RenamedFile[]; // Files that were renamed
+  contentChanges: ContentChange[]; // Content modifications
   manualReviewRequired: ManualReviewItem[]; // Files requiring manual intervention
-  errors: RefactorError[];            // Any errors encountered
+  errors: RefactorError[]; // Any errors encountered
 }
 
 interface ManualReviewItem {
-  filePath: string;          // File that needs manual review
-  desiredNewPath: string;    // Desired new file name that conflicts
-  reason: string;            // Reason for manual review
+  filePath: string; // File that needs manual review
+  desiredNewPath: string; // Desired new file name that conflicts
+  reason: string; // Reason for manual review
   conflictType: 'naming_conflict' | 'other'; // Type of conflict
 }
 ```
@@ -532,9 +593,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - 🚀 **Angular 20 Support**: Clean, concise file naming conventions
 - 📁 **Modern File Naming**: Remove redundant suffixes from components, services, directives
+- 🧠 **Smart Domain Detection**: Automatically detects service patterns and suggests domain-specific names
+- ⚠️ **Conflict Detection**: Identifies naming conflicts and provides manual review guidance
 - 🔗 **Smart URL Updates**: Template and style URLs match new Angular 20 naming
+- 📎 **Associated File Renaming**: Automatically renames HTML, CSS, and spec files with components
 - 🎯 **Hyphenated Suffixes**: Pipes, modules, guards use hyphenated suffixes (`-pipe.ts`, `-module.ts`)
 - 🏷️ **Component & Directive Refactoring**: Proper selectors and class names
-- 🧪 **Comprehensive CLI**: Full dry-run mode with detailed reporting
+- 🧪 **Comprehensive CLI**: Full dry-run mode with detailed reporting and relative path output
 - ✅ **Full Test Coverage**: Extensive test suite with integration tests
 - 🔄 **Automated Publishing**: GitHub Actions workflow for npm releases
