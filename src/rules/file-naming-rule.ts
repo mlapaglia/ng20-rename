@@ -4,6 +4,7 @@ import { RenameRule, RuleResult } from './base-rule';
 import { AngularFile, AngularFileType } from '../types';
 import { ServiceDomainDetector } from './service-domain-detector';
 import { TsFileDomainDetector } from './ts-file-domain-detector';
+import { ANGULAR_PATTERNS } from '../shared/angular-patterns';
 
 /**
  * Rule to ensure file names follow Angular 20 naming conventions:
@@ -315,39 +316,39 @@ export class FileNamingRule extends RenameRule {
    */
   private determineFileTypeFromContent(content: string): AngularFileType {
     if (
-      content.includes('@Component') ||
-      /export\s+class\s+\w*Component\s*{/.test(content) ||
-      content.includes('templateUrl') ||
-      content.includes('styleUrls')
+      content.includes(ANGULAR_PATTERNS.COMPONENT.DECORATOR) ||
+      ANGULAR_PATTERNS.COMPONENT.CLASS_EXPORT.test(content) ||
+      content.includes(ANGULAR_PATTERNS.COMPONENT.TEMPLATE_URL) ||
+      content.includes(ANGULAR_PATTERNS.COMPONENT.STYLE_URLS)
     ) {
       return AngularFileType.COMPONENT;
     }
 
-    if (content.includes('@Injectable')) {
+    if (content.includes(ANGULAR_PATTERNS.SERVICE.DECORATOR)) {
       return AngularFileType.SERVICE;
     }
 
-    if (content.includes('@Directive')) {
+    if (content.includes(ANGULAR_PATTERNS.DIRECTIVE.DECORATOR)) {
       return AngularFileType.DIRECTIVE;
     }
 
-    if (content.includes('@Pipe')) {
+    if (content.includes(ANGULAR_PATTERNS.PIPE.DECORATOR)) {
       return AngularFileType.PIPE;
     }
 
-    if (content.includes('@NgModule')) {
+    if (content.includes(ANGULAR_PATTERNS.MODULE.DECORATOR)) {
       return AngularFileType.MODULE;
     }
 
-    if (content.includes('CanActivate') || content.includes('CanLoad')) {
+    if (content.includes(ANGULAR_PATTERNS.GUARD.CAN_ACTIVATE) || content.includes(ANGULAR_PATTERNS.GUARD.CAN_LOAD)) {
       return AngularFileType.GUARD;
     }
 
-    if (content.includes('HttpInterceptor')) {
+    if (content.includes(ANGULAR_PATTERNS.INTERCEPTOR.HTTP_INTERCEPTOR)) {
       return AngularFileType.INTERCEPTOR;
     }
 
-    if (content.includes('Resolve')) {
+    if (content.includes(ANGULAR_PATTERNS.RESOLVER.RESOLVE)) {
       return AngularFileType.RESOLVER;
     }
 

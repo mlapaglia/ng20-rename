@@ -3,6 +3,8 @@
  * Analyzes TypeScript file content to determine appropriate domain-specific naming
  */
 
+import { escapeRegExp, validateRegexPattern, DOMAIN_DETECTION } from '../shared/angular-patterns';
+
 interface DomainPattern {
   suffix: string;
   patterns: {
@@ -58,6 +60,8 @@ const TS_DOMAIN_PATTERNS: DomainPattern[] = [
     suffix: '-constants',
     patterns: {
       keywords: ['constant', 'CATEGORIES', 'DEFAULT', 'MAX', 'MIN', 'API_ENDPOINTS', 'HTTP_STATUS'],
+      // Matches constant declarations with all-uppercase names, e.g. 'const MAX_VALUE ='
+      // Matches constant declarations with names containing underscores, e.g. 'const API_ENDPOINTS ='
       exports: ['const\\s+[A-Z_]+\\s*=', 'const\\s+\\w*_\\w*\\s*='],
       methods: []
     }
@@ -127,7 +131,8 @@ export class TsFileDomainDetector {
       // Check method names
       if (pattern.patterns.methods) {
         for (const method of pattern.patterns.methods) {
-          if (new RegExp(`\\b${method}\\w*\\s*\\(`).test(fileContent)) {
+          const escapedMethod = escapeRegExp(method);
+          if (new RegExp(`\\b${escapedMethod}\\w*\\s*\\(`).test(fileContent)) {
             score += 2;
           }
         }
@@ -145,7 +150,8 @@ export class TsFileDomainDetector {
       // Check keywords in content
       if (pattern.patterns.keywords) {
         for (const keyword of pattern.patterns.keywords) {
-          if (new RegExp(`\\b${keyword}\\b`, 'i').test(fileContent)) {
+          const escapedKeyword = escapeRegExp(keyword);
+          if (new RegExp(`\\b${escapedKeyword}\\b`, 'i').test(fileContent)) {
             score += 1;
           }
         }
@@ -154,7 +160,8 @@ export class TsFileDomainDetector {
       // Check exports
       if (pattern.patterns.exports) {
         for (const exportPattern of pattern.patterns.exports) {
-          if (new RegExp(exportPattern, 'i').test(fileContent)) {
+          // Validate regex pattern for security
+          if (validateRegexPattern(exportPattern) && new RegExp(exportPattern, 'i').test(fileContent)) {
             score += 3;
           }
         }
@@ -169,7 +176,7 @@ export class TsFileDomainDetector {
 
     // Only use domain-specific naming if confidence is high enough
     // and significantly better than other options
-    if (bestScore >= 3) {
+    if (bestScore >= DOMAIN_DETECTION.MINIMUM_CONFIDENCE_THRESHOLD) {
       const [, secondBestScore] = sortedScores[1] || [null, 0];
       if (bestScore > secondBestScore) {
         // Clear winner
