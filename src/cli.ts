@@ -6,13 +6,40 @@ import { existsSync } from 'fs';
 import { AngularRefactorer } from './refactorer';
 import { RefactorOptions } from './types';
 import { CliFormatter } from './cli-formatter';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+// Read version from package.json
+function getVersion(): string {
+  try {
+    // Try multiple possible locations for package.json
+    const possiblePaths = [
+      join(__dirname, '..', 'package.json'),     // From dist/ directory
+      join(__dirname, '..', '..', 'package.json'), // From dist/src/ directory  
+      join(process.cwd(), 'package.json')        // From current working directory
+    ];
+    
+    for (const packageJsonPath of possiblePaths) {
+      if (existsSync(packageJsonPath)) {
+        const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+        return packageJson.version;
+      }
+    }
+    
+    // Fallback version if package.json can't be found
+    return '1.0.0';
+  } catch (error) {
+    // Fallback version if package.json can't be read
+    return '1.0.0';
+  }
+}
 
 const program = new Command();
 
 program
   .name('ng20-rename')
   .description('Refactor Angular applications to use the latest Angular naming conventions')
-  .version('1.0.0');
+  .version(getVersion());
 
 program
   .argument('<directory>', 'Directory to scan for Angular files')
