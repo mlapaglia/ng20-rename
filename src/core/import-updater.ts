@@ -117,7 +117,7 @@ export class ImportUpdater {
     for (const filePath of allTsFiles) {
       try {
         // Check if this file exists (it might have been renamed)
-        const actualFilePath = this.getActualFilePath(filePath, pathMap);
+        const actualFilePath = this.getActualFilePath(filePath);
 
         if (!this.fileSystem.exists(actualFilePath)) {
           continue;

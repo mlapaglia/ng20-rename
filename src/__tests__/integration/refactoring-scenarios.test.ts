@@ -57,7 +57,7 @@ describe('Refactoring Scenarios - Integration Tests', () => {
       const vfs = scenario.getVirtualFileSystem();
 
       // Simulate the refactoring process
-      simulateRefactoring(vfs, scenario);
+      simulateRefactoring(vfs);
 
       // Verify renames occurred
       expect(vfs.exists('src/app/user-profile.ts')).toBe(true);
@@ -142,7 +142,7 @@ describe('Refactoring Scenarios - Integration Tests', () => {
       const vfs = scenario.getVirtualFileSystem();
 
       // Simulate the refactoring process
-      simulateRefactoring(vfs, scenario);
+      simulateRefactoring(vfs);
 
       // Verify service was renamed
       expect(vfs.exists('src/app/services/user.ts')).toBe(true);
@@ -213,7 +213,7 @@ describe('Refactoring Scenarios - Integration Tests', () => {
       const vfs = scenario.getVirtualFileSystem();
 
       // Simulate the refactoring process
-      simulateRefactoring(vfs, scenario);
+      simulateRefactoring(vfs);
 
       // Verify conflict resolution
       expect(vfs.exists('src/app/user.ts')).toBe(true); // Original interface stays
@@ -286,7 +286,7 @@ describe('Refactoring Scenarios - Integration Tests', () => {
       const vfs = scenario.getVirtualFileSystem();
 
       // Simulate the refactoring process
-      simulateRefactoring(vfs, scenario);
+      simulateRefactoring(vfs);
 
       // Verify files were renamed appropriately
       expect(vfs.exists('src/app/shared/models/user.model.ts')).toBe(true); // Models typically keep their suffix
@@ -313,8 +313,7 @@ describe('Refactoring Scenarios - Integration Tests', () => {
       const vfs = VirtualFileSystemFactory.createSnackbarProject();
 
       // Simulate the refactoring process
-      const scenario = new TestScenarioBuilder(vfs);
-      simulateRefactoring(vfs, scenario);
+      simulateRefactoring(vfs);
 
       // Verify the results
       const files = vfs.getAllFiles();
@@ -368,7 +367,7 @@ describe('Refactoring Scenarios - Integration Tests', () => {
       const vfs = scenario.getVirtualFileSystem();
 
       // Simulate the refactoring process
-      simulateRefactoring(vfs, scenario);
+      simulateRefactoring(vfs);
 
       // Both files should exist after renaming (no conflict resolution in simulation)
       expect(vfs.exists('src/user.ts')).toBe(true); // Original model
@@ -412,7 +411,7 @@ describe('Refactoring Scenarios - Integration Tests', () => {
       const vfs = scenario.getVirtualFileSystem();
 
       // Simulate the refactoring process
-      simulateRefactoring(vfs, scenario);
+      simulateRefactoring(vfs);
 
       // Original config should remain
       expect(vfs.exists('src/auth.ts')).toBe(true);
