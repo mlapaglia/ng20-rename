@@ -1,0 +1,12 @@
+<div class="snackbar-content">
+  <mat-icon [style.color]="getIconColor" class="snackbar-icon">{{getIcon}}</mat-icon>
+  <div matSnackBarLabel class="snackbar-messages">
+    <span class="primary-message">{{data.message}}</span>
+    @if (data.message2) {
+      <span class="secondary-message">{{data.message2}}</span>
+    }
+  </div>
+  <button mat-button matSnackBarAction class="snackbar-action" (click)="dismiss()">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
