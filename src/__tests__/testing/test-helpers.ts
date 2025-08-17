@@ -1,6 +1,6 @@
 /**
  * Additional Test Helper Utilities
- * 
+ *
  * Provides commonly used test patterns and utilities to reduce duplication
  * and improve test maintainability.
  */
@@ -35,7 +35,7 @@ export class TestPatterns {
   static expectNoBrokenImports(vfs: VirtualFileSystem): void {
     const allFiles = vfs.getAllFiles();
     const brokenImports: string[] = [];
-    
+
     for (const filePath of allFiles) {
       if (filePath.endsWith('.ts')) {
         const content = vfs.readFile(filePath);
@@ -43,11 +43,11 @@ export class TestPatterns {
         brokenImports.push(...fileBrokenImports);
       }
     }
-    
+
     if (brokenImports.length > 0) {
       console.warn('Broken imports detected:', brokenImports);
     }
-    
+
     expect(brokenImports).toHaveLength(0);
   }
 
@@ -62,7 +62,11 @@ export class TestPatterns {
   /**
    * Create a basic Angular component structure
    */
-  static createAngularComponent(name: string, includeSpec: boolean = true, includeTemplate: boolean = true): VirtualFile[] {
+  static createAngularComponent(
+    name: string,
+    includeSpec: boolean = true,
+    includeTemplate: boolean = true
+  ): VirtualFile[] {
     const files: VirtualFile[] = [
       {
         path: `src/app/${name}.component.ts`,
@@ -169,11 +173,11 @@ export class PerformanceTestUtils {
     const start = performance.now();
     const result = await fn();
     const timeMs = performance.now() - start;
-    
+
     if (description) {
       console.log(`⏱️ ${description}: ${timeMs.toFixed(2)}ms`);
     }
-    
+
     return { result, timeMs };
   }
 
@@ -181,7 +185,7 @@ export class PerformanceTestUtils {
    * Benchmark a function multiple times and get statistics
    */
   static async benchmark<T>(
-    fn: () => Promise<T> | T, 
+    fn: () => Promise<T> | T,
     iterations: number = 10,
     description?: string
   ): Promise<{ avgMs: number; minMs: number; maxMs: number; results: T[] }> {
@@ -211,11 +215,7 @@ export class PerformanceTestUtils {
   /**
    * Assert that an operation completes within a time limit
    */
-  static async expectTimeLessThan<T>(
-    fn: () => Promise<T> | T, 
-    maxTimeMs: number, 
-    description?: string
-  ): Promise<T> {
+  static async expectTimeLessThan<T>(fn: () => Promise<T> | T, maxTimeMs: number, description?: string): Promise<T> {
     const { result, timeMs } = await this.measureTime(fn, description);
     expect(timeMs).toBeLessThan(maxTimeMs);
     return result;
@@ -229,12 +229,14 @@ export class TestDataGenerators {
   /**
    * Generate a realistic Angular project structure
    */
-  static generateAngularProject(options: {
-    components?: string[];
-    services?: string[];
-    includeSpecs?: boolean;
-    includeTemplates?: boolean;
-  } = {}): VirtualFile[] {
+  static generateAngularProject(
+    options: {
+      components?: string[];
+      services?: string[];
+      includeSpecs?: boolean;
+      includeTemplates?: boolean;
+    } = {}
+  ): VirtualFile[] {
     const {
       components = ['user', 'product', 'dashboard'],
       services = ['api', 'auth', 'storage'],
@@ -285,23 +287,23 @@ export class AppModule { }`
       // Basic cases
       { input: 'user.component.ts', expected: 'user.ts', description: 'Basic component' },
       { input: 'api.service.ts', expected: 'api.ts', description: 'Basic service' },
-      
+
       // Spec files
       { input: 'user.component.spec.ts', expected: 'user.spec.ts', description: 'Component spec' },
       { input: 'api.service.spec.ts', expected: 'api.spec.ts', description: 'Service spec' },
-      
+
       // Complex names
       { input: 'user-profile.component.ts', expected: 'user-profile.ts', description: 'Hyphenated component' },
       { input: 'data-access.service.ts', expected: 'data-access.ts', description: 'Hyphenated service' },
-      
+
       // Nested paths
       { input: 'src/app/user.component.ts', expected: 'src/app/user.ts', description: 'Nested component' },
       { input: 'libs/shared/api.service.ts', expected: 'libs/shared/api.ts', description: 'Nested service' },
-      
+
       // Files that shouldn't change
       { input: 'user.model.ts', expected: 'user.model.ts', description: 'Model file (no change)' },
       { input: 'app.config.ts', expected: 'app.config.ts', description: 'Config file (no change)' },
-      { input: 'auth.guard.ts', expected: 'auth.guard.ts', description: 'Guard file (no change)' },
+      { input: 'auth.guard.ts', expected: 'auth.guard.ts', description: 'Guard file (no change)' }
     ];
   }
 }

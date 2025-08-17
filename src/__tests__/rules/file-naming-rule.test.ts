@@ -5,7 +5,7 @@ import * as path from 'path';
 // Mock fs for conflict resolution tests
 jest.mock('fs', () => ({
   existsSync: jest.fn(),
-  readFileSync: jest.fn(),
+  readFileSync: jest.fn()
 }));
 
 describe('FileNamingRule', () => {
@@ -199,8 +199,8 @@ describe('FileNamingRule', () => {
   });
 
   describe('conflict resolution', () => {
-    const mockedExistsSync = require('fs').existsSync as jest.MockedFunction<any>;
-    const mockedReadFileSync = require('fs').readFileSync as jest.MockedFunction<any>;
+    const mockedExistsSync = existsSync as jest.MockedFunction<typeof existsSync>;
+    const mockedReadFileSync = readFileSync as jest.MockedFunction<typeof readFileSync>;
 
     beforeEach(() => {
       jest.clearAllMocks();
@@ -208,7 +208,7 @@ describe('FileNamingRule', () => {
 
     it('should resolve conflicts by renaming plain TypeScript files with detected domain', async () => {
       const rule = new FileNamingRule();
-      
+
       // Setup: component wants to be renamed to user.ts, but user.ts already exists
       const componentFile: AngularFile = {
         path: '/test/user.component.ts',
@@ -225,13 +225,12 @@ describe('FileNamingRule', () => {
       `;
 
       // Mock file system calls
-      mockedExistsSync
-        .mockImplementation((path: string) => {
-          if (path.includes('user.ts') && !path.includes('user-model.ts')) return true; // Conflicting file exists
-          if (path.includes('user-model.ts')) return false; // Resolution target doesn't exist
-          return false;
-        });
-      
+      mockedExistsSync.mockImplementation((path: string) => {
+        if (path.includes('user.ts') && !path.includes('user-model.ts')) return true; // Conflicting file exists
+        if (path.includes('user-model.ts')) return false; // Resolution target doesn't exist
+        return false;
+      });
+
       mockedReadFileSync.mockReturnValue(conflictingFileContent);
 
       const result = await rule.apply(componentFile);
@@ -244,7 +243,7 @@ describe('FileNamingRule', () => {
 
     it('should resolve conflicts for service files with smart domain detection', async () => {
       const rule = new FileNamingRule();
-      
+
       const serviceFile: AngularFile = {
         path: '/test/auth.service.ts',
         content: `
@@ -258,13 +257,6 @@ describe('FileNamingRule', () => {
         type: AngularFileType.SERVICE
       };
 
-      const conflictingFileContent = `
-        export const authConfig = {
-          apiUrl: 'https://auth.example.com',
-          timeout: 5000
-        };
-      `;
-
       // Mock file system calls - no conflicts
       mockedExistsSync.mockReturnValue(false);
 
@@ -276,7 +268,7 @@ describe('FileNamingRule', () => {
 
     it('should fallback to manual review when conflict cannot be resolved', async () => {
       const rule = new FileNamingRule();
-      
+
       const componentFile: AngularFile = {
         path: '/test/user.component.ts',
         content: 'export class UserComponent {}',
@@ -304,7 +296,7 @@ describe('FileNamingRule', () => {
 
     it('should fallback to manual review when conflicting file is an Angular file', async () => {
       const rule = new FileNamingRule();
-      
+
       const componentFile: AngularFile = {
         path: '/test/user.component.ts',
         content: 'export class UserComponent {}',
@@ -329,7 +321,7 @@ describe('FileNamingRule', () => {
 
     it('should fallback to manual review when proposed resolution name already exists', async () => {
       const rule = new FileNamingRule();
-      
+
       const componentFile: AngularFile = {
         path: '/test/user.component.ts',
         content: 'export class UserComponent {}',
@@ -345,9 +337,9 @@ describe('FileNamingRule', () => {
 
       // Mock file system calls
       mockedExistsSync
-        .mockReturnValueOnce(true)  // user.ts exists (conflict)
+        .mockReturnValueOnce(true) // user.ts exists (conflict)
         .mockReturnValueOnce(true); // user-model.ts also exists (resolution conflict)
-      
+
       mockedReadFileSync.mockReturnValue(conflictingFileContent);
 
       const result = await rule.apply(componentFile);
@@ -359,7 +351,7 @@ describe('FileNamingRule', () => {
 
     it('should handle file read errors gracefully', async () => {
       const rule = new FileNamingRule();
-      
+
       const componentFile: AngularFile = {
         path: '/test/user.component.ts',
         content: 'export class UserComponent {}',
@@ -381,7 +373,7 @@ describe('FileNamingRule', () => {
 
     it('should include component associated files when resolving conflicts', async () => {
       const rule = new FileNamingRule();
-      
+
       const componentFile: AngularFile = {
         path: '/test/user.component.ts',
         content: 'export class UserComponent {}',
@@ -396,37 +388,38 @@ describe('FileNamingRule', () => {
       `;
 
       // Mock file system calls for conflict resolution
-      mockedExistsSync
-        .mockImplementation((path: string) => {
-          // Conflict resolution
-          if (path.includes('user.ts') && !path.includes('user-model.ts')) return true; // Conflicting file exists
-          if (path.includes('user-model.ts')) return false; // Resolution target doesn't exist
-          
-          // Associated files that exist
-          if (path.includes('user.component.html')) return true;
-          if (path.includes('user.component.css')) return true;
-          
-          // Associated files that don't exist or new names
-          if (path.includes('user.html')) return false;
-          if (path.includes('user.css')) return false;
-          if (path.includes('user.component.scss')) return false;
-          if (path.includes('user.component.less')) return false;
-          if (path.includes('user.component.spec.ts')) return false;
-          
-          return false;
-        });
-      
+      mockedExistsSync.mockImplementation((path: string) => {
+        // Conflict resolution
+        if (path.includes('user.ts') && !path.includes('user-model.ts')) return true; // Conflicting file exists
+        if (path.includes('user-model.ts')) return false; // Resolution target doesn't exist
+
+        // Associated files that exist
+        if (path.includes('user.component.html')) return true;
+        if (path.includes('user.component.css')) return true;
+
+        // Associated files that don't exist or new names
+        if (path.includes('user.html')) return false;
+        if (path.includes('user.css')) return false;
+        if (path.includes('user.component.scss')) return false;
+        if (path.includes('user.component.less')) return false;
+        if (path.includes('user.component.spec.ts')) return false;
+
+        return false;
+      });
+
       mockedReadFileSync.mockReturnValue(conflictingFileContent);
 
       const result = await rule.apply(componentFile);
 
       expect(result.newFileName).toBe('/test/user.ts'.replace(/\//g, path.sep));
       expect(result.additionalRenames).toHaveLength(3); // conflict resolution + 2 associated files
-      
+
       // Check conflict resolution rename
-      const conflictRename = result.additionalRenames!.find(r => r.oldPath.includes('user.ts') && r.newPath.includes('user-model.ts'));
+      const conflictRename = result.additionalRenames!.find(
+        r => r.oldPath.includes('user.ts') && r.newPath.includes('user-model.ts')
+      );
       expect(conflictRename).toBeDefined();
-      
+
       // Check associated file renames
       const htmlRename = result.additionalRenames!.find(r => r.oldPath.includes('.html'));
       const cssRename = result.additionalRenames!.find(r => r.oldPath.includes('.css'));
@@ -444,8 +437,7 @@ describe('FileNamingRule', () => {
       };
 
       // Mock fs to simulate spec file existence
-      const fs = require('fs');
-      fs.existsSync.mockImplementation((filePath: string) => {
+      (existsSync as jest.MockedFunction<typeof existsSync>).mockImplementation((filePath: string) => {
         return filePath.includes('user-profile.spec.ts');
       });
 
@@ -453,12 +445,12 @@ describe('FileNamingRule', () => {
 
       // Check that the main file is renamed
       expect(result.newFileName).toBe('/test/user-profile.ts'.replace(/\//g, path.sep));
-      
+
       // Additional renames may or may not exist depending on associated files
       if (result.additionalRenames) {
         expect(Array.isArray(result.additionalRenames)).toBe(true);
       }
-      
+
       // Additional content changes may or may not exist
       if (result.additionalContentChanges) {
         expect(Array.isArray(result.additionalContentChanges)).toBe(true);
@@ -473,8 +465,7 @@ describe('FileNamingRule', () => {
       };
 
       // Mock fs to simulate conflicting non-TS file
-      const fs = require('fs');
-      fs.existsSync.mockImplementation((filePath: string) => {
+      (existsSync as jest.MockedFunction<typeof existsSync>).mockImplementation((filePath: string) => {
         return filePath.includes('user-profile.js'); // Non-TS file
       });
 

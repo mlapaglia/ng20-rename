@@ -6,6 +6,7 @@ module.exports = {
   },
   plugins: ['@typescript-eslint', 'prettier'],
   extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended', 'prettier'],
+  ignorePatterns: ['src/__tests__/fixtures/**/*'],
   rules: {
     'prettier/prettier': 'error',
     '@typescript-eslint/no-unused-vars': 'error',

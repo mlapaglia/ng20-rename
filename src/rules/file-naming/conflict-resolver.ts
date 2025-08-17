@@ -16,7 +16,6 @@ export interface ConflictResolution {
  * Handles naming conflicts when renaming files
  */
 export class ConflictResolver {
-
   /**
    * Attempts to resolve a naming conflict by analyzing the conflicting file
    * and potentially renaming it to a domain-specific name
@@ -63,7 +62,10 @@ export class ConflictResolver {
         }
       };
     } catch (error) {
-      return { resolved: false, reason: `Error reading conflicting file: ${error instanceof Error ? error.message : String(error)}` };
+      return {
+        resolved: false,
+        reason: `Error reading conflicting file: ${error instanceof Error ? error.message : String(error)}`
+      };
     }
   }
 

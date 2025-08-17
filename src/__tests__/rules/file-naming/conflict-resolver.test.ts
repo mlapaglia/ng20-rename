@@ -1,5 +1,4 @@
 import { ConflictResolver } from '../../../rules/file-naming/conflict-resolver';
-import { AngularFileType } from '../../../types';
 import { existsSync, readFileSync } from 'fs';
 import { TsFileDomainDetector } from '../../../rules/ts-file-domain-detector';
 import { normalize } from 'path';
@@ -9,7 +8,9 @@ jest.mock('../../../rules/ts-file-domain-detector');
 
 const mockExistsSync = existsSync as jest.MockedFunction<typeof existsSync>;
 const mockReadFileSync = readFileSync as jest.MockedFunction<typeof readFileSync>;
-const mockDetectDomain = TsFileDomainDetector.detectDomain as jest.MockedFunction<typeof TsFileDomainDetector.detectDomain>;
+const mockDetectDomain = TsFileDomainDetector.detectDomain as jest.MockedFunction<
+  typeof TsFileDomainDetector.detectDomain
+>;
 
 describe('ConflictResolver', () => {
   let resolver: ConflictResolver;
@@ -224,7 +225,7 @@ describe('ConflictResolver', () => {
         mockReadFileSync.mockReturnValue(otherContent);
         mockDetectDomain.mockReturnValue('-auth');
         mockExistsSync
-          .mockReturnValueOnce(true)  // Original file exists
+          .mockReturnValueOnce(true) // Original file exists
           .mockReturnValueOnce(false); // Proposed new name doesn't exist
 
         const result = resolver.attemptConflictResolution('/path/to/utility.ts');
@@ -242,7 +243,7 @@ describe('ConflictResolver', () => {
         mockReadFileSync.mockReturnValue(otherContent);
         mockDetectDomain.mockReturnValue('-user');
         mockExistsSync
-          .mockReturnValueOnce(true)  // Original file exists
+          .mockReturnValueOnce(true) // Original file exists
           .mockReturnValueOnce(false); // Proposed new name doesn't exist
 
         const result = resolver.attemptConflictResolution('/path/to/subdir/helper.ts');
@@ -330,7 +331,7 @@ describe('ConflictResolver', () => {
         mockReadFileSync.mockReturnValue(otherContent);
         mockDetectDomain.mockReturnValue('-utils');
         mockExistsSync
-          .mockReturnValueOnce(true)  // Original file exists
+          .mockReturnValueOnce(true) // Original file exists
           .mockReturnValueOnce(false); // Proposed new name doesn't exist
 
         const result = resolver.attemptConflictResolution('/path/to/interfaces.ts');

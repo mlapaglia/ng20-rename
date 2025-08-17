@@ -74,7 +74,7 @@ export class AssociatedFileHandler {
 
     const fileDir = dirname(originalFilePath);
     const newFileNameWithoutExt = basename(expectedFileName, extname(expectedFileName));
-    
+
     const oldSpecPath = join(fileDir, `${oldFileNameWithoutExt}.spec.ts`);
     const newSpecPath = join(fileDir, `${newFileNameWithoutExt}.spec.ts`);
 
@@ -102,7 +102,7 @@ export class AssociatedFileHandler {
               reason: 'Updated import statements to match renamed file'
             });
           }
-        } catch (error) {
+        } catch {
           // If we can't read the spec file, just rename it without updating imports
         }
       }
@@ -116,11 +116,11 @@ export class AssociatedFileHandler {
    */
   private updateSpecFileImports(specContent: string, oldFileName: string, newFileName: string): string {
     let updatedContent = specContent;
-    
+
     // Extract base names without extensions for import matching
     const oldFileBase = oldFileName.replace(/\.[^.]+$/, ''); // Remove extension
     const newFileBase = newFileName.replace(/\.[^.]+$/, ''); // Remove extension
-    
+
     // Common import patterns to update (both with and without extensions)
     // Updated patterns to match both forward slashes and backslashes in paths
     const importPatterns = [
@@ -136,7 +136,7 @@ export class AssociatedFileHandler {
       updatedContent = updatedContent.replace(pattern, (match, pathPrefix = '', fileName) => {
         // Normalize path separators to forward slashes
         const normalizedPathPrefix = pathPrefix.replace(/\\/g, '/');
-        
+
         // If the match includes the full filename with extension, replace with new base name (no extension)
         if (fileName === oldFileName) {
           const replacement = match.replace(oldFileName, newFileBase);
@@ -153,15 +153,9 @@ export class AssociatedFileHandler {
 
     // Additional step: normalize all remaining backslashes in import paths to forward slashes
     // This handles imports that weren't specifically renamed but may contain backslashes
-    updatedContent = updatedContent.replace(
-      /(from\s+['"`]\.\/[^'"`]*['"`])/g,
-      (match) => match.replace(/\\/g, '/')
-    );
-    
-    updatedContent = updatedContent.replace(
-      /(import\s+['"`]\.\/[^'"`]*['"`])/g,
-      (match) => match.replace(/\\/g, '/')
-    );
+    updatedContent = updatedContent.replace(/(from\s+['"`]\.\/[^'"`]*['"`])/g, match => match.replace(/\\/g, '/'));
+
+    updatedContent = updatedContent.replace(/(import\s+['"`]\.\/[^'"`]*['"`])/g, match => match.replace(/\\/g, '/'));
 
     return updatedContent;
   }

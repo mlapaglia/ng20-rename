@@ -1,5 +1,5 @@
-import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { dirname, basename, join, relative, extname, resolve } from 'path';
+import { readFileSync, writeFileSync, existsSync, readdirSync } from 'fs';
+import { dirname, join, relative, extname, resolve } from 'path';
 import { RefactorResult, RenamedFile, ContentChange } from '../types';
 
 /**
@@ -57,7 +57,7 @@ class RealFileSystem implements FileSystem {
   }
 
   getAllTsFiles(rootDir: string): string[] {
-    const { readdirSync } = require('fs');
+    // Use imported readdirSync
     const files: string[] = [];
 
     function walkDir(dir: string) {
@@ -76,7 +76,7 @@ class RealFileSystem implements FileSystem {
             files.push(fullPath);
           }
         }
-      } catch (error) {
+      } catch {
         // Skip directories we can't read
       }
     }
@@ -118,7 +118,7 @@ export class ImportUpdater {
       try {
         // Check if this file exists (it might have been renamed)
         const actualFilePath = this.getActualFilePath(filePath, pathMap);
-        
+
         if (!this.fileSystem.exists(actualFilePath)) {
           continue;
         }
@@ -147,20 +147,20 @@ export class ImportUpdater {
    */
   private createPathMapping(renamedFiles: RenamedFile[]): Map<string, string> {
     const pathMap = new Map<string, string>();
-    
+
     for (const renamed of renamedFiles) {
       // Store both with and without extensions for flexible matching
       const oldPathResolved = resolve(renamed.oldPath);
       const newPathResolved = resolve(renamed.newPath);
-      
+
       pathMap.set(oldPathResolved, newPathResolved);
-      
+
       // Also store without extension for import resolution
       const oldWithoutExt = this.removeExtension(oldPathResolved);
       const newWithoutExt = this.removeExtension(newPathResolved);
       pathMap.set(oldWithoutExt, newWithoutExt);
     }
-    
+
     return pathMap;
   }
 
@@ -168,7 +168,7 @@ export class ImportUpdater {
    * Gets the actual file path, accounting for renames
    * Since getAllTsFiles returns current existing files, we don't need to map them
    */
-  private getActualFilePath(originalPath: string, pathMap: Map<string, string>): string {
+  private getActualFilePath(originalPath: string): string {
     // The files returned by getAllTsFiles() are already the current paths after renames
     // We don't need to map them again
     return originalPath;
@@ -186,7 +186,7 @@ export class ImportUpdater {
     // Process imports in reverse order to maintain line/column positions
     for (let i = imports.length - 1; i >= 0; i--) {
       const importStatement = imports[i];
-      
+
       // Only process relative imports
       if (!this.isRelativeImport(importStatement.importPath)) {
         continue;
@@ -194,24 +194,22 @@ export class ImportUpdater {
 
       // Resolve the import to an absolute path
       const resolvedImportPath = this.resolveImportPath(filePath, importStatement.importPath);
-      
+
       // Check if this resolved path maps to a new path
       const newPath = pathMap.get(resolvedImportPath);
-      
+
       if (newPath) {
-        
         // Calculate the new relative import path
         const newImportPath = this.calculateRelativeImportPath(filePath, newPath);
-        
+
         // Replace the import path in the content
         const lines = updatedContent.split('\n');
         const lineIndex = importStatement.lineNumber - 1;
         const line = lines[lineIndex];
-        
-        const newLine = line.substring(0, importStatement.startPos) + 
-                       newImportPath + 
-                       line.substring(importStatement.endPos);
-        
+
+        const newLine =
+          line.substring(0, importStatement.startPos) + newImportPath + line.substring(importStatement.endPos);
+
         lines[lineIndex] = newLine;
         updatedContent = lines.join('\n');
         hasChanges = true;
@@ -298,12 +296,12 @@ export class ImportUpdater {
   private calculateRelativeImportPath(fromFilePath: string, toFilePath: string): string {
     const fromDir = dirname(fromFilePath);
     const toFileWithoutExt = this.removeExtension(toFilePath);
-    
+
     let relativePath = relative(fromDir, toFileWithoutExt);
-    
+
     // Normalize path separators to forward slashes (TypeScript/ES modules standard)
     relativePath = relativePath.replace(/\\/g, '/');
-    
+
     // Ensure relative path starts with ./ if it doesn't start with ../
     if (!relativePath.startsWith('../') && !relativePath.startsWith('./')) {
       relativePath = './' + relativePath;

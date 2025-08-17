@@ -1,5 +1,5 @@
 import { RenameRule } from '../../rules/base-rule';
-import { AngularFile, AngularFileType } from '../../types';
+import { AngularFile } from '../../types';
 
 // Create a concrete implementation for testing
 class TestRule extends RenameRule {
@@ -10,7 +10,7 @@ class TestRule extends RenameRule {
     return this.extractComponentSelector(content);
   }
 
-  public shouldApply(file: AngularFile): boolean {
+  public shouldApply(): boolean {
     return true;
   }
 

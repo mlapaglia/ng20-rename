@@ -1,6 +1,6 @@
 /**
  * Virtual File System for Testing
- * 
+ *
  * Provides an in-memory file system that can be used for testing file operations
  * without touching the actual file system. This prevents side effects and makes
  * tests faster and more reliable.
@@ -20,7 +20,7 @@ export class VirtualFileSystem {
   private files: Map<string, VirtualFile> = new Map();
   private pathSeparator: '/' | '\\' = '/';
   private simulateWindows: boolean = false;
-  
+
   constructor(initialFiles: VirtualFile[] = []) {
     for (const file of initialFiles) {
       this.writeFile(file.path, file.content);
@@ -65,7 +65,7 @@ export class VirtualFileSystem {
   renameFile(oldPath: string, newPath: string): void {
     const normalizedOldPath = this.normalizePath(oldPath);
     const normalizedNewPath = this.normalizePath(newPath);
-    
+
     const file = this.files.get(normalizedOldPath);
     if (!file) {
       throw new Error(`File not found: ${oldPath}`);
@@ -103,7 +103,7 @@ export class VirtualFileSystem {
   getFilesInDirectory(dirPath: string): string[] {
     const normalizedDir = this.normalizePath(dirPath);
     const prefix = normalizedDir.endsWith('/') ? normalizedDir : normalizedDir + '/';
-    
+
     return this.getAllFiles().filter(path => path.startsWith(prefix));
   }
 
@@ -188,22 +188,24 @@ export class VirtualFileSystem {
   getRelativePath(from: string, to: string): string {
     const fromParts = this.normalizePath(from).split('/').slice(0, -1);
     const toParts = this.normalizePath(to).split('/').slice(0, -1);
-    const toFileName = to.split(/[\/\\]/).pop()?.replace(/\.ts$/, '') || '';
-    
+    const toFileName = to.split(/[/\\]/).pop()?.replace(/\.ts$/, '') || '';
+
     // Find common prefix
     let commonLength = 0;
-    while (commonLength < fromParts.length && 
-           commonLength < toParts.length && 
-           fromParts[commonLength] === toParts[commonLength]) {
+    while (
+      commonLength < fromParts.length &&
+      commonLength < toParts.length &&
+      fromParts[commonLength] === toParts[commonLength]
+    ) {
       commonLength++;
     }
-    
+
     // Calculate relative path
     const upLevels = fromParts.length - commonLength;
     const downPath = toParts.slice(commonLength);
-    
+
     const relativeParts = Array(upLevels).fill('..').concat(downPath);
-    
+
     let relativePath: string;
     if (relativeParts.length === 0) {
       relativePath = `.${this.pathSeparator}${toFileName}`;
@@ -227,7 +229,7 @@ export class VirtualFileSystem {
       .replace(/\*\*/g, '.*')
       .replace(/\*/g, '[^/]*')
       .replace(/\?/g, '[^/]');
-    
+
     return new RegExp(`^${regexPattern}$`);
   }
 }
@@ -331,4 +333,3 @@ export class SnackBar {
     return new VirtualFileSystem(files);
   }
 }
-

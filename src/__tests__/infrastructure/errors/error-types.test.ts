@@ -1,11 +1,11 @@
-import { 
-  AppError, 
-  ErrorCategory, 
-  ConfigurationError, 
-  FileSystemError, 
-  ValidationError, 
-  ProcessingError, 
-  ConflictResolutionError 
+import {
+  AppError,
+  ErrorCategory,
+  ConfigurationError,
+  FileSystemError,
+  ValidationError,
+  ProcessingError,
+  ConflictResolutionError
 } from '../../../infrastructure/errors/error-types';
 
 describe('Error Types', () => {
@@ -27,7 +27,7 @@ describe('Error Types', () => {
 
     it('should create error with message', () => {
       const error = new TestAppError('Test message');
-      
+
       expect(error.message).toBe('Test message');
       expect(error.name).toBe('TestAppError');
       expect(error.code).toBe('TEST_ERROR');
@@ -38,7 +38,7 @@ describe('Error Types', () => {
     it('should create error with message and context', () => {
       const context = { file: 'test.ts', line: 10 };
       const error = new TestAppError('Test message', context);
-      
+
       expect(error.message).toBe('Test message');
       expect(error.context).toEqual(context);
     });
@@ -59,7 +59,7 @@ describe('Error Types', () => {
   describe('ConfigurationError', () => {
     it('should have correct properties', () => {
       const error = new ConfigurationError('Config error');
-      
+
       expect(error.code).toBe('CONFIG_ERROR');
       expect(error.category).toBe(ErrorCategory.CONFIGURATION);
       expect(error.message).toBe('Config error');
@@ -69,7 +69,7 @@ describe('Error Types', () => {
     it('should accept context', () => {
       const context = { configFile: 'app.config.ts' };
       const error = new ConfigurationError('Config error', context);
-      
+
       expect(error.context).toEqual(context);
     });
   });
@@ -77,7 +77,7 @@ describe('Error Types', () => {
   describe('FileSystemError', () => {
     it('should have correct properties', () => {
       const error = new FileSystemError('File not found');
-      
+
       expect(error.code).toBe('FS_ERROR');
       expect(error.category).toBe(ErrorCategory.FILE_SYSTEM);
       expect(error.message).toBe('File not found');
@@ -87,7 +87,7 @@ describe('Error Types', () => {
     it('should accept context', () => {
       const context = { path: '/test/file.ts' };
       const error = new FileSystemError('File not found', context);
-      
+
       expect(error.context).toEqual(context);
     });
   });
@@ -95,7 +95,7 @@ describe('Error Types', () => {
   describe('ValidationError', () => {
     it('should have correct properties', () => {
       const error = new ValidationError('Invalid input');
-      
+
       expect(error.code).toBe('VALIDATION_ERROR');
       expect(error.category).toBe(ErrorCategory.VALIDATION);
       expect(error.message).toBe('Invalid input');
@@ -105,7 +105,7 @@ describe('Error Types', () => {
     it('should accept context', () => {
       const context = { field: 'rootDir', value: null };
       const error = new ValidationError('Invalid input', context);
-      
+
       expect(error.context).toEqual(context);
     });
   });
@@ -113,7 +113,7 @@ describe('Error Types', () => {
   describe('ProcessingError', () => {
     it('should have correct properties', () => {
       const error = new ProcessingError('Processing failed');
-      
+
       expect(error.code).toBe('PROCESSING_ERROR');
       expect(error.category).toBe(ErrorCategory.PROCESSING);
       expect(error.message).toBe('Processing failed');
@@ -123,7 +123,7 @@ describe('Error Types', () => {
     it('should accept context', () => {
       const context = { step: 'parsing', file: 'component.ts' };
       const error = new ProcessingError('Processing failed', context);
-      
+
       expect(error.context).toEqual(context);
     });
   });
@@ -131,7 +131,7 @@ describe('Error Types', () => {
   describe('ConflictResolutionError', () => {
     it('should have correct properties', () => {
       const error = new ConflictResolutionError('Conflict occurred');
-      
+
       expect(error.code).toBe('CONFLICT_ERROR');
       expect(error.category).toBe(ErrorCategory.CONFLICT_RESOLUTION);
       expect(error.message).toBe('Conflict occurred');
@@ -141,7 +141,7 @@ describe('Error Types', () => {
     it('should accept context', () => {
       const context = { existingFile: 'old.ts', newFile: 'new.ts' };
       const error = new ConflictResolutionError('Conflict occurred', context);
-      
+
       expect(error.context).toEqual(context);
     });
   });

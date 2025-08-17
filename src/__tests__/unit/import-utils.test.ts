@@ -1,6 +1,6 @@
 /**
  * Unit Tests for Import Statement Utilities
- * 
+ *
  * These tests focus solely on import statement parsing and updating logic
  * without any file system operations.
  */
@@ -127,8 +127,8 @@ describe('Import Statement Utils - Unit Tests', () => {
     it('should handle complex relative paths', () => {
       const content = `import { Component } from '../../../shared/components/base.component';`;
       const updated = ImportTestUtils.updateImportPath(
-        content, 
-        '../../../shared/components/base.component', 
+        content,
+        '../../../shared/components/base.component',
         '../../../shared/components/base'
       );
 
@@ -215,17 +215,13 @@ describe('Import Statement Utils - Unit Tests', () => {
 
     it('should validate complex directory structures', () => {
       const vfs = VirtualFileSystemFactory.createAngularProject();
-      
+
       const content = `
         import { UserService } from '../services/user.service';
         import { ProfileComponent } from './profile.component';
       `;
 
-      const brokenImports = ImportTestUtils.validateImports(
-        'src/app/components/user.component.ts', 
-        content, 
-        vfs
-      );
+      const brokenImports = ImportTestUtils.validateImports('src/app/components/user.component.ts', content, vfs);
 
       expect(brokenImports).toHaveLength(1); // profile.component doesn't exist
       expect(brokenImports[0]).toContain('./profile.component');
@@ -260,11 +256,10 @@ describe('Import Statement Utils - Unit Tests', () => {
       const imports = ImportTestUtils.parseImports(content);
       expect(imports.length).toBeGreaterThanOrEqual(2);
       expect(imports[0].namedImports).toEqual(['Component']);
-      
+
       // Find the import with Injectable (may include comments in parsing)
-      const injectableImport = imports.find(imp => 
-        imp.namedImports.includes('Injectable') || 
-        imp.namedImports.some(name => name.includes('Injectable'))
+      const injectableImport = imports.find(
+        imp => imp.namedImports.includes('Injectable') || imp.namedImports.some(name => name.includes('Injectable'))
       );
       expect(injectableImport).toBeTruthy();
     });
@@ -287,4 +282,3 @@ describe('Import Statement Utils - Unit Tests', () => {
     });
   });
 });
-

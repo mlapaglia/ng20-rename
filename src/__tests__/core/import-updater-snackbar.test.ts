@@ -30,7 +30,7 @@ describe('ImportUpdater - Snackbar Scenario', () => {
   it('should handle the exact snackbar rename scenario described by the user', async () => {
     // Set up the exact scenario described:
     // snackbar.ts -> snackbar-model.ts
-    // snackbar.service.spec.ts -> snackbar-notifications.spec.ts  
+    // snackbar.service.spec.ts -> snackbar-notifications.spec.ts
     // snackbar.service.ts -> snackbar-notifications.ts
     // snackbar.component.html -> snackbar.html
     // snackbar.component.less -> snackbar.less

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import { resolve, relative } from 'path';
+import { resolve } from 'path';
 import { existsSync } from 'fs';
 import { AngularRefactorer } from './refactorer';
 import { RefactorOptions } from './types';
@@ -14,21 +14,21 @@ function getVersion(): string {
   try {
     // Try multiple possible locations for package.json
     const possiblePaths = [
-      join(__dirname, '..', 'package.json'),     // From dist/ directory
-      join(__dirname, '..', '..', 'package.json'), // From dist/src/ directory  
-      join(process.cwd(), 'package.json')        // From current working directory
+      join(__dirname, '..', 'package.json'), // From dist/ directory
+      join(__dirname, '..', '..', 'package.json'), // From dist/src/ directory
+      join(process.cwd(), 'package.json') // From current working directory
     ];
-    
+
     for (const packageJsonPath of possiblePaths) {
       if (existsSync(packageJsonPath)) {
         const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
         return packageJson.version;
       }
     }
-    
+
     // Fallback version if package.json can't be found
     return '1.0.0';
-  } catch (error) {
+  } catch {
     // Fallback version if package.json can't be read
     return '1.0.0';
   }
@@ -60,7 +60,7 @@ program
       }
     ) => {
       const formatter = new CliFormatter();
-      
+
       try {
         const rootDir = resolve(directory);
 
@@ -95,20 +95,21 @@ program
         // Display results with beautiful formatting
         formatter.printSummary(result);
         formatter.printRenamedFiles(result.renamedFiles);
-        
+
         if (options.verbose) {
           formatter.printContentChanges(result.contentChanges);
         }
-        
+
         formatter.printManualReviewItems(result.manualReviewRequired);
         formatter.printErrors(result.errors);
 
         // Final completion message
         const hasChanges = result.renamedFiles.length > 0 || result.contentChanges.length > 0;
         formatter.printCompletionMessage(hasChanges, options.dryRun);
-
       } catch (error) {
-        formatter.printError(`An error occurred during refactoring: ${error instanceof Error ? error.message : String(error)}`);
+        formatter.printError(
+          `An error occurred during refactoring: ${error instanceof Error ? error.message : String(error)}`
+        );
         process.exit(1);
       }
     }

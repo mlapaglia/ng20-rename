@@ -1,10 +1,4 @@
-import { 
-  LogLevel, 
-  ILogger, 
-  ConsoleLogger, 
-  SilentLogger, 
-  LoggerFactory 
-} from '../../../infrastructure/logger/logger';
+import { LogLevel, ConsoleLogger, SilentLogger, LoggerFactory } from '../../../infrastructure/logger/logger';
 
 describe('Logger', () => {
   describe('LogLevel', () => {
@@ -121,10 +115,7 @@ describe('Logger', () => {
         const context = { file: 'test.ts', line: 10 };
         logger.info('Message with context', context);
 
-        expect(consoleSpy.log).toHaveBeenCalledWith(
-          '[INFO] Message with context',
-          JSON.stringify(context, null, 2)
-        );
+        expect(consoleSpy.log).toHaveBeenCalledWith('[INFO] Message with context', JSON.stringify(context, null, 2));
       });
 
       it('should handle empty context', () => {
@@ -184,7 +175,7 @@ describe('Logger', () => {
     it('should allow setting custom logger', () => {
       const customLogger = new SilentLogger();
       LoggerFactory.setLogger(customLogger);
-      
+
       const retrievedLogger = LoggerFactory.getLogger();
       expect(retrievedLogger).toBe(customLogger);
     });

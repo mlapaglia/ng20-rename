@@ -36,9 +36,7 @@ export class ErrorHandler {
    * Handles multiple errors
    */
   static handleErrors(errors: Array<{ error: unknown; filePath: string; line?: number }>): RefactorError[] {
-    return errors.map(({ error, filePath, line }) => 
-      this.handleError(error, filePath, line)
-    );
+    return errors.map(({ error, filePath, line }) => this.handleError(error, filePath, line));
   }
 
   /**
@@ -47,10 +45,9 @@ export class ErrorHandler {
   static isRecoverable(error: unknown): boolean {
     if (error instanceof AppError) {
       // Configuration and validation errors are typically not recoverable
-      return error.category !== ErrorCategory.CONFIGURATION && 
-             error.category !== ErrorCategory.VALIDATION;
+      return error.category !== ErrorCategory.CONFIGURATION && error.category !== ErrorCategory.VALIDATION;
     }
-    
+
     return true; // Assume other errors might be recoverable
   }
 
@@ -73,7 +70,7 @@ export class ErrorHandler {
           return 'medium';
       }
     }
-    
+
     return 'medium';
   }
 }

@@ -26,7 +26,7 @@ describe('FileNamingRule Edge Cases', () => {
 
       // Create source file
       fs.writeFileSync(sourceFile, '@Injectable() export class UserService {}');
-      
+
       // Create spec file with import that needs updating
       const specContent = `
         import { TestBed } from '@angular/core/testing';
@@ -78,10 +78,10 @@ describe('FileNamingRule Edge Cases', () => {
 
       // Create source file
       fs.writeFileSync(sourceFile, '@Injectable() export class UserService {}');
-      
+
       // Create spec file
       fs.writeFileSync(specFile, 'describe("UserService", () => {});');
-      
+
       // Create conflicting spec file
       fs.writeFileSync(conflictingSpecFile, 'describe("Conflict", () => {});');
 
@@ -222,7 +222,7 @@ describe('FileNamingRule Edge Cases', () => {
 
       // Create source file
       fs.writeFileSync(sourceFile, '@Injectable() export class UserService {}');
-      
+
       // Create conflicting file with no clear domain patterns
       fs.writeFileSync(conflictingFile, 'export const USER_CONFIG = {};');
 
@@ -238,7 +238,7 @@ describe('FileNamingRule Edge Cases', () => {
       // Let's check if either scenario happened
       const hasManualReview = result.manualReviewRequired && result.manualReviewRequired.length > 0;
       const hasRename = result.newFileName !== undefined;
-      
+
       // Either should require manual review OR should have resolved the conflict
       expect(hasManualReview || hasRename).toBe(true);
     });
@@ -315,7 +315,7 @@ describe('FileNamingRule Edge Cases', () => {
       const specFile = path.join(tempDir, 'test.service.spec.ts');
 
       fs.writeFileSync(sourceFile, '@Injectable() export class TestService {}');
-      
+
       const specContent = `
         import { TestService } from './test.service';
         import { OtherService } from "./test.service";
@@ -346,7 +346,7 @@ describe('FileNamingRule Edge Cases', () => {
       const specFile = path.join(tempDir, 'api.service.spec.ts');
 
       fs.writeFileSync(sourceFile, '@Injectable() export class ApiService {}');
-      
+
       const specContent = `import { ApiService } from './api.service.ts';`;
       fs.writeFileSync(specFile, specContent);
 
