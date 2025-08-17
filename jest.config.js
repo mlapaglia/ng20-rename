@@ -5,9 +5,17 @@ module.exports = {
   testMatch: ['**/__tests__/**/*.test.ts', '**/?(*.)+(spec|test).ts'],
   testPathIgnorePatterns: ['<rootDir>/src/__tests__/fixtures/'],
   transform: {
-    '^.+\\.ts$': 'ts-jest'
+    '^.+\\.ts$': ['ts-jest', {
+      tsconfig: {
+        module: 'commonjs'
+      }
+    }]
   },
-  collectCoverageFrom: ['src/**/*.ts', '!src/**/*.test.ts', '!src/**/*.spec.ts', '!src/cli.ts', '!src/__tests__/fixtures/**/*'],
+  moduleNameMapper: {
+    '^chalk$': '<rootDir>/src/__tests__/__mocks__/chalk.js',
+    '^cli-table3$': '<rootDir>/src/__tests__/__mocks__/cli-table3.js'
+  },
+  collectCoverageFrom: ['src/**/*.ts', '!src/**/*.test.ts', '!src/**/*.spec.ts', '!src/cli.ts', '!src/__tests__/fixtures/**/*', '!src/__tests__/__mocks__/**/*'],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   coverageThreshold: {
