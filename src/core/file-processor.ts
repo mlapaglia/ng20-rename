@@ -1,4 +1,4 @@
-import { writeFileSync, renameSync, existsSync } from 'fs';
+import { writeFileSync, renameSync, existsSync, readFileSync } from 'fs';
 import { AngularFile, RefactorResult, RenamedFile, ContentChange } from '../types';
 import { RenameRule } from '../rules/base-rule';
 
@@ -27,6 +27,26 @@ export class FileProcessor {
                 renameSync(additionalRename.oldPath, additionalRename.newPath);
               }
               result.renamedFiles.push(additionalRename);
+            }
+          }
+        }
+
+        // Handle additional content changes
+        if (ruleResult.additionalContentChanges) {
+          for (const contentChange of ruleResult.additionalContentChanges) {
+            if (existsSync(contentChange.filePath)) {
+              const oldContent = readFileSync(contentChange.filePath, 'utf-8');
+              const changes = this.getContentChanges(
+                contentChange.filePath,
+                oldContent,
+                contentChange.newContent,
+                contentChange.reason
+              );
+              result.contentChanges.push(...changes);
+
+              if (!this.dryRun) {
+                writeFileSync(contentChange.filePath, contentChange.newContent, 'utf-8');
+              }
             }
           }
         }

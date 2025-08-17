@@ -3,11 +3,13 @@ import { FileDiscovery } from './core/file-discovery';
 import { FileProcessor } from './core/file-processor';
 import { ReportGenerator } from './core/report-generator';
 import { RuleFactory } from './core/rule-factory';
+import { ImportUpdater } from './core/import-updater';
 
 export class AngularRefactorer {
   private options: Required<RefactorOptions>;
   private fileDiscovery: FileDiscovery;
   private fileProcessor: FileProcessor;
+  private importUpdater: ImportUpdater;
 
   constructor(options: RefactorOptions) {
     this.options = {
@@ -23,6 +25,7 @@ export class AngularRefactorer {
 
     const rules = RuleFactory.createStandardRules(this.options.smartServices);
     this.fileProcessor = new FileProcessor(rules, this.options.dryRun);
+    this.importUpdater = new ImportUpdater(this.options.dryRun);
   }
 
   async refactor(): Promise<RefactorResult> {
@@ -52,6 +55,11 @@ export class AngularRefactorer {
             message: error instanceof Error ? error.message : String(error)
           });
         }
+      }
+
+      // Update import statements in all files after renames are complete
+      if (result.renamedFiles.length > 0) {
+        await this.importUpdater.updateImports(this.options.rootDir, result.renamedFiles, result);
       }
 
       if (this.options.verbose) {
