@@ -4,28 +4,27 @@ import { FileProcessor } from './core/file-processor';
 import { ReportGenerator } from './core/report-generator';
 import { RuleFactory } from './core/rule-factory';
 import { ImportUpdater } from './core/import-updater';
+import { Configuration } from './config/configuration';
+import { RuleConfig } from './config/rule-config';
 
 export class AngularRefactorer {
-  private options: Required<RefactorOptions>;
+  private config: Configuration;
+  private ruleConfig: RuleConfig;
   private fileDiscovery: FileDiscovery;
   private fileProcessor: FileProcessor;
   private importUpdater: ImportUpdater;
 
   constructor(options: RefactorOptions) {
-    this.options = {
-      include: ['**/*.ts', '**/*.html', '**/*.css', '**/*.scss'],
-      exclude: ['node_modules/**', 'dist/**', '**/*.spec.ts'],
-      dryRun: false,
-      verbose: false,
-      smartServices: true,
-      ...options
-    };
+    this.config = new Configuration(options);
+    this.ruleConfig = new RuleConfig({
+      smartServices: this.config.isSmartServicesEnabled()
+    });
 
-    this.fileDiscovery = new FileDiscovery(this.options);
+    this.fileDiscovery = new FileDiscovery(this.config.getOptions());
 
-    const rules = RuleFactory.createStandardRules(this.options.smartServices);
-    this.fileProcessor = new FileProcessor(rules, this.options.dryRun);
-    this.importUpdater = new ImportUpdater(this.options.dryRun);
+    const rules = RuleFactory.createCustomRules(this.ruleConfig);
+    this.fileProcessor = new FileProcessor(rules, this.config.isDryRun());
+    this.importUpdater = new ImportUpdater(this.config.isDryRun());
   }
 
   async refactor(): Promise<RefactorResult> {
@@ -40,7 +39,7 @@ export class AngularRefactorer {
     try {
       const files = await this.fileDiscovery.findAngularFiles();
 
-      if (this.options.verbose) {
+      if (this.config.isVerbose()) {
         console.log(`Found ${files.length} Angular files to process`);
         ReportGenerator.logFileTypeBreakdown(files);
       }
@@ -59,10 +58,10 @@ export class AngularRefactorer {
 
       // Update import statements in all files after renames are complete
       if (result.renamedFiles.length > 0) {
-        await this.importUpdater.updateImports(this.options.rootDir, result.renamedFiles, result);
+        await this.importUpdater.updateImports(this.config.getRootDir(), result.renamedFiles, result);
       }
 
-      if (this.options.verbose) {
+      if (this.config.isVerbose()) {
         console.log(`Processing complete:`);
         console.log(`- Files processed: ${result.processedFiles.length}`);
         console.log(`- Files renamed: ${result.renamedFiles.length}`);
@@ -71,7 +70,7 @@ export class AngularRefactorer {
       }
     } catch (error) {
       result.errors.push({
-        filePath: this.options.rootDir,
+        filePath: this.config.getRootDir(),
         message: `Failed to scan directory: ${error instanceof Error ? error.message : String(error)}`
       });
     }

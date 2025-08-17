@@ -1,10 +1,10 @@
 import { basename, dirname, join, extname } from 'path';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync } from 'fs';
 import { RenameRule, RuleResult } from './base-rule';
 import { AngularFile, AngularFileType } from '../types';
-import { ServiceDomainDetector } from './service-domain-detector';
-import { TsFileDomainDetector } from './ts-file-domain-detector';
-import { ANGULAR_PATTERNS } from '../shared/angular-patterns';
+import { ConflictResolver } from './file-naming/conflict-resolver';
+import { FileNameGenerator } from './file-naming/file-name-generator';
+import { AssociatedFileHandler } from './file-naming/associated-file-handler';
 
 /**
  * Rule to ensure file names follow Angular 20 naming conventions:
@@ -18,11 +18,13 @@ export class FileNamingRule extends RenameRule {
   readonly name = 'file-naming';
   readonly description = 'Ensures file names follow Angular 20 naming conventions: clean, concise, kebab-case';
 
-  private smartServices: boolean;
+  private conflictResolver = new ConflictResolver();
+  private fileNameGenerator: FileNameGenerator;
+  private associatedFileHandler = new AssociatedFileHandler();
 
   constructor(smartServices: boolean = true) {
     super();
-    this.smartServices = smartServices;
+    this.fileNameGenerator = new FileNameGenerator(smartServices);
   }
 
   shouldApply(file: AngularFile): boolean {
@@ -43,7 +45,7 @@ export class FileNamingRule extends RenameRule {
       return {}; // No class found, nothing to rename
     }
 
-    const expectedFileName = this.getExpectedFileName(className, file.type, fileExt, file.content);
+    const expectedFileName = this.fileNameGenerator.getExpectedFileName(className, file.type, fileExt, file.content);
 
     if (currentFileName === expectedFileName) {
       return {}; // Already correctly named
@@ -53,7 +55,7 @@ export class FileNamingRule extends RenameRule {
     const newPath = join(fileDir, expectedFileName);
     if (existsSync(newPath) && newPath !== file.path) {
       // Try to resolve conflict automatically by renaming the conflicting file
-      const conflictResolution = this.attemptConflictResolution(newPath);
+      const conflictResolution = this.conflictResolver.attemptConflictResolution(newPath);
 
       if (conflictResolution.resolved) {
         // We can resolve the conflict - add the conflicting file rename to additional renames
@@ -65,12 +67,17 @@ export class FileNamingRule extends RenameRule {
 
         // For components, also rename associated files (HTML, CSS, LESS, SCSS, spec)
         if (file.type === AngularFileType.COMPONENT) {
-          const associatedRenames = this.getAssociatedFileRenames(file.path, fileNameWithoutExt, className, file.type);
+          const associatedRenames = this.associatedFileHandler.getAssociatedFileRenames(
+            file.path,
+            fileNameWithoutExt,
+            className,
+            file.type
+          );
           result.additionalRenames = (result.additionalRenames || []).concat(associatedRenames);
         }
 
         // For all file types, check for associated spec files
-        const specResult = this.getSpecFileRenames(
+        const specResult = this.associatedFileHandler.getSpecFileRenames(
           file.path,
           fileNameWithoutExt,
           className,
@@ -101,7 +108,7 @@ export class FileNamingRule extends RenameRule {
       }
     }
 
-    // File name doesn't match expected Angular 20 naming convention
+    // No conflict, proceed with rename
     const result: RuleResult = {
       newFileName: newPath,
       reason: `File name should follow Angular 20 conventions: ${currentFileName} -> ${expectedFileName}`
@@ -109,11 +116,22 @@ export class FileNamingRule extends RenameRule {
 
     // For components, also rename associated files (HTML, CSS, LESS, SCSS, spec)
     if (file.type === AngularFileType.COMPONENT) {
-      result.additionalRenames = this.getAssociatedFileRenames(file.path, fileNameWithoutExt, className, file.type);
+      result.additionalRenames = this.associatedFileHandler.getAssociatedFileRenames(
+        file.path,
+        fileNameWithoutExt,
+        className,
+        file.type
+      );
     }
 
     // For all file types, check for associated spec files
-    const specResult = this.getSpecFileRenames(file.path, fileNameWithoutExt, className, file.type, expectedFileName);
+    const specResult = this.associatedFileHandler.getSpecFileRenames(
+      file.path,
+      fileNameWithoutExt,
+      className,
+      file.type,
+      expectedFileName
+    );
     if (specResult.renames.length > 0) {
       result.additionalRenames = (result.additionalRenames || []).concat(specResult.renames);
     }
@@ -122,328 +140,5 @@ export class FileNamingRule extends RenameRule {
     }
 
     return result;
-  }
-
-  private getExpectedFileName(
-    className: string,
-    fileType: AngularFileType,
-    extension: string,
-    fileContent?: string
-  ): string {
-    // Remove type suffix from class name (e.g., UserProfileComponent -> UserProfile)
-    const baseName = this.removeClassTypeSuffix(className, fileType);
-
-    // Convert to kebab-case
-    const kebabName = this.toKebabCase(baseName);
-
-    // Add appropriate suffix based on file type
-    const suffix = this.getTypeSuffix(fileType, fileContent);
-
-    return `${kebabName}${suffix}${extension}`;
-  }
-
-  private removeClassTypeSuffix(className: string, fileType: AngularFileType): string {
-    const suffixes: Partial<Record<AngularFileType, string>> = {
-      [AngularFileType.COMPONENT]: 'Component',
-      [AngularFileType.SERVICE]: 'Service',
-      [AngularFileType.DIRECTIVE]: 'Directive',
-      [AngularFileType.PIPE]: 'Pipe',
-      [AngularFileType.MODULE]: 'Module',
-      [AngularFileType.GUARD]: 'Guard',
-      [AngularFileType.INTERCEPTOR]: 'Interceptor',
-      [AngularFileType.RESOLVER]: 'Resolver'
-    };
-
-    const suffix = suffixes[fileType];
-    if (suffix && className.endsWith(suffix)) {
-      return className.slice(0, -suffix.length);
-    }
-
-    return className;
-  }
-
-  private removeTypeSuffix(fileName: string, fileType: AngularFileType): string {
-    // Handle both old Angular naming and new Angular 20 naming
-    const oldSuffixes: Partial<Record<AngularFileType, string>> = {
-      [AngularFileType.COMPONENT]: '.component',
-      [AngularFileType.SERVICE]: '.service',
-      [AngularFileType.DIRECTIVE]: '.directive',
-      [AngularFileType.PIPE]: '.pipe',
-      [AngularFileType.MODULE]: '.module',
-      [AngularFileType.GUARD]: '.guard',
-      [AngularFileType.INTERCEPTOR]: '.interceptor',
-      [AngularFileType.RESOLVER]: '.resolver'
-    };
-
-    const newSuffixes: Partial<Record<AngularFileType, string>> = {
-      [AngularFileType.PIPE]: '-pipe',
-      [AngularFileType.MODULE]: '-module',
-      [AngularFileType.GUARD]: '-guard',
-      [AngularFileType.INTERCEPTOR]: '-interceptor',
-      [AngularFileType.RESOLVER]: '-resolver'
-    };
-
-    // Try old suffix first (for migration from old to new)
-    const oldSuffix = oldSuffixes[fileType];
-    if (oldSuffix && fileName.endsWith(oldSuffix)) {
-      return fileName.slice(0, -oldSuffix.length);
-    }
-
-    // Try new suffix
-    const newSuffix = newSuffixes[fileType];
-    if (newSuffix && fileName.endsWith(newSuffix)) {
-      return fileName.slice(0, -newSuffix.length);
-    }
-
-    return fileName;
-  }
-
-  private getTypeSuffix(fileType: AngularFileType, fileContent?: string): string {
-    if (fileType === AngularFileType.SERVICE && this.smartServices && fileContent) {
-      const detectedDomain = ServiceDomainDetector.detectDomain(fileContent);
-      if (detectedDomain) {
-        return detectedDomain;
-      }
-    }
-
-    // Angular 20 naming conventions: Clean and concise file names
-    const suffixes: Record<AngularFileType, string> = {
-      // No suffixes for components, directives, and services (Angular 20)
-      [AngularFileType.COMPONENT]: '',
-      [AngularFileType.SERVICE]: '',
-      [AngularFileType.DIRECTIVE]: '',
-
-      // Hyphenated suffixes for other types (Angular 20)
-      [AngularFileType.PIPE]: '-pipe',
-      [AngularFileType.MODULE]: '-module',
-      [AngularFileType.GUARD]: '-guard',
-      [AngularFileType.INTERCEPTOR]: '-interceptor',
-      [AngularFileType.RESOLVER]: '-resolver',
-      [AngularFileType.SPEC]: '.spec',
-      [AngularFileType.HTML_TEMPLATE]: '',
-      [AngularFileType.STYLESHEET]: '',
-      [AngularFileType.OTHER]: ''
-    };
-
-    return suffixes[fileType] || '';
-  }
-
-  private getAssociatedFileRenames(
-    componentPath: string,
-    currentFileNameWithoutExt: string,
-    className: string,
-    fileType: AngularFileType
-  ): Array<{
-    oldPath: string;
-    newPath: string;
-  }> {
-    const fileDir = dirname(componentPath);
-    const baseName = this.removeClassTypeSuffix(className, fileType);
-    const newKebabName = this.toKebabCase(baseName);
-    const renames: Array<{ oldPath: string; newPath: string }> = [];
-
-    // Define the associated file extensions to check (excluding spec files - handled separately)
-    const associatedExtensions = [{ ext: '.html' }, { ext: '.css' }, { ext: '.scss' }, { ext: '.less' }];
-
-    for (const { ext } of associatedExtensions) {
-      // Look for files with the old naming pattern
-      const oldAssociatedPath = join(fileDir, `${currentFileNameWithoutExt}${ext}`);
-
-      if (existsSync(oldAssociatedPath)) {
-        const newAssociatedPath = join(fileDir, `${newKebabName}${ext}`);
-
-        // Check for conflicts before adding to rename list
-        if (!existsSync(newAssociatedPath) || newAssociatedPath === oldAssociatedPath) {
-          renames.push({
-            oldPath: oldAssociatedPath,
-            newPath: newAssociatedPath
-          });
-        }
-        // Note: We silently skip conflicting associated files rather than warn for each one
-      }
-    }
-
-    return renames;
-  }
-
-  /**
-   * Gets spec file renames and content changes for any file type
-   */
-  private getSpecFileRenames(
-    filePath: string,
-    currentFileNameWithoutExt: string,
-    className: string,
-    fileType: AngularFileType,
-    expectedFileName: string
-  ): {
-    renames: Array<{
-      oldPath: string;
-      newPath: string;
-    }>;
-    contentChanges: Array<{
-      filePath: string;
-      newContent: string;
-      reason: string;
-    }>;
-  } {
-    const fileDir = dirname(filePath);
-    const renames: Array<{ oldPath: string; newPath: string }> = [];
-    const contentChanges: Array<{ filePath: string; newContent: string; reason: string }> = [];
-
-    // Look for corresponding spec file
-    const oldSpecPath = join(fileDir, `${currentFileNameWithoutExt}.spec.ts`);
-
-    if (existsSync(oldSpecPath)) {
-      // Get the new base name from the expected file name (without extension)
-      const expectedFileNameWithoutExt = basename(expectedFileName, extname(expectedFileName));
-      const newSpecPath = join(fileDir, `${expectedFileNameWithoutExt}.spec.ts`);
-
-      // Check for conflicts before adding to rename list
-      if (!existsSync(newSpecPath) || newSpecPath === oldSpecPath) {
-        renames.push({
-          oldPath: oldSpecPath,
-          newPath: newSpecPath
-        });
-
-        // Update import statements in the spec file
-        const specContent = readFileSync(oldSpecPath, 'utf-8');
-        const updatedSpecContent = this.updateSpecFileImports(
-          specContent,
-          currentFileNameWithoutExt,
-          expectedFileNameWithoutExt
-        );
-
-        if (updatedSpecContent !== specContent) {
-          contentChanges.push({
-            filePath: newSpecPath, // Use the new path since the file will be renamed
-            newContent: updatedSpecContent,
-            reason: 'Updated import statements to match renamed source file'
-          });
-        }
-      }
-    }
-
-    return { renames, contentChanges };
-  }
-
-  /**
-   * Updates import statements in spec files to match renamed source files
-   */
-  private updateSpecFileImports(specContent: string, oldFileName: string, newFileName: string): string {
-    let updatedContent = specContent;
-
-    // Update relative imports that reference the old file name
-    const importPatterns = [
-      new RegExp(`from\\s+['"\`]\\./${oldFileName}['"\`]`, 'g'),
-      new RegExp(`from\\s+['"\`]\\./${oldFileName}\\.ts['"\`]`, 'g')
-    ];
-
-    for (const pattern of importPatterns) {
-      updatedContent = updatedContent.replace(pattern, `from './${newFileName}'`);
-    }
-
-    return updatedContent;
-  }
-
-  /**
-   * Attempts to resolve a naming conflict by intelligently renaming the conflicting file
-   */
-  private attemptConflictResolution(conflictingFilePath: string): {
-    resolved: boolean;
-    conflictingFileRename?: { oldPath: string; newPath: string };
-    reason?: string;
-  } {
-    // Only attempt to resolve conflicts with plain .ts files (OTHER type)
-    if (!existsSync(conflictingFilePath) || !conflictingFilePath.endsWith('.ts')) {
-      return { resolved: false, reason: 'conflicting file is not a plain TypeScript file' };
-    }
-
-    try {
-      // Read the conflicting file to analyze its content
-      const conflictingFileContent = readFileSync(conflictingFilePath, 'utf-8');
-
-      // Determine if it's a plain TypeScript file (not an Angular file)
-      const conflictingFileType = this.determineFileTypeFromContent(conflictingFileContent);
-
-      if (conflictingFileType !== AngularFileType.OTHER) {
-        return { resolved: false, reason: `conflicting file is a ${conflictingFileType}, not a plain TypeScript file` };
-      }
-
-      // Use the TypeScript domain detector to suggest a better name
-      const detectedDomain = TsFileDomainDetector.detectDomain(conflictingFileContent);
-
-      if (!detectedDomain) {
-        return { resolved: false, reason: 'could not determine appropriate domain for conflicting file' };
-      }
-
-      // Generate the new name for the conflicting file
-      const conflictingFileDir = dirname(conflictingFilePath);
-      const conflictingFileNameWithoutExt = basename(conflictingFilePath, '.ts');
-      const newConflictingFileName = `${conflictingFileNameWithoutExt}${detectedDomain}.ts`;
-      const newConflictingFilePath = join(conflictingFileDir, newConflictingFileName);
-
-      // Make sure the new name doesn't conflict with anything else
-      if (existsSync(newConflictingFilePath)) {
-        return { resolved: false, reason: `proposed name ${newConflictingFileName} already exists` };
-      }
-
-      // Success! We can resolve the conflict
-      return {
-        resolved: true,
-        conflictingFileRename: {
-          oldPath: conflictingFilePath,
-          newPath: newConflictingFilePath
-        }
-      };
-    } catch (error) {
-      return {
-        resolved: false,
-        reason: `failed to read conflicting file: ${error instanceof Error ? error.message : String(error)}`
-      };
-    }
-  }
-
-  /**
-   * Determines file type from content analysis (similar to FileDiscovery but for conflict resolution)
-   */
-  private determineFileTypeFromContent(content: string): AngularFileType {
-    if (
-      content.includes(ANGULAR_PATTERNS.COMPONENT.DECORATOR) ||
-      ANGULAR_PATTERNS.COMPONENT.CLASS_EXPORT.test(content) ||
-      content.includes(ANGULAR_PATTERNS.COMPONENT.TEMPLATE_URL) ||
-      content.includes(ANGULAR_PATTERNS.COMPONENT.STYLE_URLS)
-    ) {
-      return AngularFileType.COMPONENT;
-    }
-
-    if (content.includes(ANGULAR_PATTERNS.SERVICE.DECORATOR)) {
-      return AngularFileType.SERVICE;
-    }
-
-    if (content.includes(ANGULAR_PATTERNS.DIRECTIVE.DECORATOR)) {
-      return AngularFileType.DIRECTIVE;
-    }
-
-    if (content.includes(ANGULAR_PATTERNS.PIPE.DECORATOR)) {
-      return AngularFileType.PIPE;
-    }
-
-    if (content.includes(ANGULAR_PATTERNS.MODULE.DECORATOR)) {
-      return AngularFileType.MODULE;
-    }
-
-    if (content.includes(ANGULAR_PATTERNS.GUARD.CAN_ACTIVATE) || content.includes(ANGULAR_PATTERNS.GUARD.CAN_LOAD)) {
-      return AngularFileType.GUARD;
-    }
-
-    if (content.includes(ANGULAR_PATTERNS.INTERCEPTOR.HTTP_INTERCEPTOR)) {
-      return AngularFileType.INTERCEPTOR;
-    }
-
-    if (content.includes(ANGULAR_PATTERNS.RESOLVER.RESOLVE)) {
-      return AngularFileType.RESOLVER;
-    }
-
-    return AngularFileType.OTHER;
   }
 }

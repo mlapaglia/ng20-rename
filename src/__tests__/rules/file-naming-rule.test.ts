@@ -299,7 +299,7 @@ describe('FileNamingRule', () => {
       expect(result.manualReviewRequired).toHaveLength(1);
       expect(result.manualReviewRequired![0].filePath).toBe('/test/user.component.ts'.replace(/\//g, path.sep));
       expect(result.manualReviewRequired![0].desiredNewPath).toBe('/test/user.ts'.replace(/\//g, path.sep));
-      expect(result.manualReviewRequired![0].reason).toContain('could not determine appropriate domain');
+      expect(result.manualReviewRequired![0].reason).toContain('Could not determine domain for conflicting file');
     });
 
     it('should fallback to manual review when conflicting file is an Angular file', async () => {
@@ -324,7 +324,7 @@ describe('FileNamingRule', () => {
 
       expect(result.newFileName).toBeUndefined();
       expect(result.manualReviewRequired).toHaveLength(1);
-      expect(result.manualReviewRequired![0].reason).toContain('conflicting file is a service');
+      expect(result.manualReviewRequired![0].reason).toContain('Conflicting file is a service');
     });
 
     it('should fallback to manual review when proposed resolution name already exists', async () => {
@@ -354,7 +354,7 @@ describe('FileNamingRule', () => {
 
       expect(result.newFileName).toBeUndefined();
       expect(result.manualReviewRequired).toHaveLength(1);
-      expect(result.manualReviewRequired![0].reason).toContain('proposed name user-model.ts already exists');
+      expect(result.manualReviewRequired![0].reason).toContain('Proposed name user-model.ts already exists');
     });
 
     it('should handle file read errors gracefully', async () => {
@@ -376,7 +376,7 @@ describe('FileNamingRule', () => {
 
       expect(result.newFileName).toBeUndefined();
       expect(result.manualReviewRequired).toHaveLength(1);
-      expect(result.manualReviewRequired![0].reason).toContain('failed to read conflicting file');
+      expect(result.manualReviewRequired![0].reason).toContain('Error reading conflicting file');
     });
 
     it('should include component associated files when resolving conflicts', async () => {
