@@ -187,20 +187,20 @@ export class ImportUpdater {
     for (let i = imports.length - 1; i >= 0; i--) {
       const importStatement = imports[i];
 
-      // Only process relative imports
-      if (!this.isRelativeImport(importStatement.importPath)) {
+      // Resolve the import to an absolute path (handles both relative and absolute imports)
+      const resolvedImportPath = this.resolveImportPath(filePath, importStatement.importPath);
+
+      // Skip if we couldn't resolve the import (e.g., external packages)
+      if (!resolvedImportPath) {
         continue;
       }
-
-      // Resolve the import to an absolute path
-      const resolvedImportPath = this.resolveImportPath(filePath, importStatement.importPath);
 
       // Check if this resolved path maps to a new path
       const newPath = pathMap.get(resolvedImportPath);
 
       if (newPath) {
-        // Calculate the new relative import path, preserving the original import style
-        const newImportPath = this.calculateRelativeImportPath(filePath, newPath, importStatement.importPath);
+        // Calculate the new import path, preserving the original import style (relative vs absolute)
+        const newImportPath = this.calculateNewImportPath(filePath, newPath, importStatement.importPath);
 
         // Replace the import path in the content
         const lines = updatedContent.split('\n');
@@ -273,21 +273,122 @@ export class ImportUpdater {
   }
 
   /**
-   * Resolves a relative import path to an absolute path
+   * Checks if an import path is an absolute import to a project file
+   * (e.g., 'app/shared/component' but not '@angular/core' or 'rxjs')
    */
-  private resolveImportPath(fromFilePath: string, importPath: string): string {
-    const fromDir = dirname(fromFilePath);
-    const resolvedPath = resolve(fromDir, importPath);
+  private isProjectAbsoluteImport(importPath: string): boolean {
+    // Skip node_modules imports (those starting with letters but no path separators at the beginning)
+    if (importPath.startsWith('@') || (!importPath.includes('/') && !importPath.startsWith('.'))) {
+      return false;
+    }
+
+    // Skip imports that are clearly external packages
+    const externalPackagePatterns = ['@angular/', '@ngrx/', 'rxjs', 'lodash', 'moment'];
+
+    if (externalPackagePatterns.some(pattern => importPath.startsWith(pattern))) {
+      return false;
+    }
+
+    // If it contains a path separator and doesn't start with . or @, treat it as a project absolute import
+    return importPath.includes('/') && !importPath.startsWith('@') && !importPath.startsWith('.');
+  }
+
+  /**
+   * Resolves a project absolute import to an absolute file path
+   * (e.g., 'app/shared/component' -> '/full/path/to/src/app/shared/component.ts')
+   */
+  private resolveProjectAbsoluteImport(fromFilePath: string, importPath: string): string {
+    // Find the project root by looking for src directory in the path
+    const srcIndex = fromFilePath.indexOf('src');
+    if (srcIndex === -1) {
+      return ''; // Can't resolve without src directory
+    }
+
+    // Get the path up to and including src
+    const projectSrcPath = fromFilePath.substring(0, srcIndex + 3); // +3 for 'src'
+
+    // Construct the full path by combining project src path with the import path
+    let fullPath = resolve(projectSrcPath, importPath);
 
     // If the import already has an extension, use it as-is
     if (importPath.endsWith('.ts') || importPath.endsWith('.js')) {
-      return this.removeExtension(resolvedPath);
+      return this.removeExtension(fullPath);
     }
 
-    // For TypeScript imports without explicit extensions, we need to add .ts for resolution
-    // but we also need to check if the import path itself (without .ts) maps to a renamed file
-    const withTsExtension = resolvedPath + '.ts';
-    return this.removeExtension(withTsExtension);
+    // Add .ts extension for TypeScript files
+    fullPath = fullPath + '.ts';
+    return this.removeExtension(fullPath);
+  }
+
+  /**
+   * Resolves an import path (relative or absolute) to an absolute file path
+   */
+  private resolveImportPath(fromFilePath: string, importPath: string): string {
+    // Handle relative imports (starting with ./ or ../)
+    if (this.isRelativeImport(importPath)) {
+      const fromDir = dirname(fromFilePath);
+      const resolvedPath = resolve(fromDir, importPath);
+
+      // If the import already has an extension, use it as-is
+      if (importPath.endsWith('.ts') || importPath.endsWith('.js')) {
+        return this.removeExtension(resolvedPath);
+      }
+
+      // For TypeScript imports without explicit extensions, we need to add .ts for resolution
+      // but we also need to check if the import path itself (without .ts) maps to a renamed file
+      const withTsExtension = resolvedPath + '.ts';
+      return this.removeExtension(withTsExtension);
+    }
+
+    // Handle absolute imports (like 'app/shared/component')
+    if (this.isProjectAbsoluteImport(importPath)) {
+      return this.resolveProjectAbsoluteImport(fromFilePath, importPath);
+    }
+
+    // Skip other imports (node_modules, etc.) by returning empty string
+    return '';
+  }
+
+  /**
+   * Calculates the new import path, preserving the original style (relative vs absolute)
+   */
+  private calculateNewImportPath(fromFilePath: string, toFilePath: string, originalImportPath: string): string {
+    // If the original was an absolute import, preserve the absolute style
+    if (this.isProjectAbsoluteImport(originalImportPath)) {
+      return this.calculateAbsoluteImportPath(toFilePath, originalImportPath);
+    }
+
+    // Otherwise, calculate a relative import path
+    return this.calculateRelativeImportPath(fromFilePath, toFilePath, originalImportPath);
+  }
+
+  /**
+   * Calculates the absolute import path for a renamed file, preserving the original style
+   */
+  private calculateAbsoluteImportPath(toFilePath: string, originalImportPath: string): string {
+    // Find the src directory in the target file path
+    const srcIndex = toFilePath.indexOf('src');
+    if (srcIndex === -1) {
+      return originalImportPath; // Fallback to original if we can't find src
+    }
+
+    // Get the path after src directory
+    const pathAfterSrc = toFilePath.substring(srcIndex + 4); // +4 to skip 'src/'
+
+    // Remove the .ts extension
+    let newAbsolutePath = this.removeExtension(pathAfterSrc);
+
+    // Normalize path separators to forward slashes (TypeScript/ES modules standard)
+    newAbsolutePath = newAbsolutePath.replace(/\\/g, '/');
+
+    // Check if the original import had an explicit .ts/.js extension
+    const hasExplicitExtension = originalImportPath.endsWith('.ts') || originalImportPath.endsWith('.js');
+    if (hasExplicitExtension) {
+      const extension = originalImportPath.endsWith('.ts') ? '.ts' : '.js';
+      newAbsolutePath += extension;
+    }
+
+    return newAbsolutePath;
   }
 
   /**
