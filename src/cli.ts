@@ -5,6 +5,7 @@ import { resolve, relative } from 'path';
 import { existsSync } from 'fs';
 import { AngularRefactorer } from './refactorer';
 import { RefactorOptions } from './types';
+import { CliFormatter } from './cli-formatter';
 
 const program = new Command();
 
@@ -31,20 +32,25 @@ program
         disableSmartServices: boolean;
       }
     ) => {
+      const formatter = new CliFormatter();
+      
       try {
         const rootDir = resolve(directory);
 
         if (!existsSync(rootDir)) {
-          console.error(`Error: Directory "${directory}" does not exist.`);
+          formatter.printError(`Directory "${directory}" does not exist.`);
           process.exit(1);
         }
 
+        formatter.printHeader('Angular Refactoring Tool');
+
         if (options.verbose) {
-          console.log(`Starting Angular refactoring in: ${rootDir}`);
-          console.log(`Dry run: ${options.dryRun ? 'Yes' : 'No'}`);
-          console.log(`Include patterns: ${options.include.join(', ')}`);
-          console.log(`Exclude patterns: ${options.exclude.join(', ')}`);
-          console.log('---');
+          formatter.printVerboseInfo({
+            rootDir,
+            dryRun: options.dryRun,
+            include: options.include,
+            exclude: options.exclude
+          });
         }
 
         const refactorOptions: RefactorOptions = {
@@ -53,93 +59,29 @@ program
           exclude: options.exclude,
           dryRun: options.dryRun,
           verbose: options.verbose,
-          smartServices: !options.disableSmartServices // Enabled by default, disabled by flag
+          smartServices: !options.disableSmartServices
         };
 
         const refactorer = new AngularRefactorer(refactorOptions);
         const result = await refactorer.refactor();
 
-        // Helper function to get relative path for cleaner output
-        const getRelativePath = (filePath: string) => {
-          return relative(process.cwd(), filePath);
-        };
-
-        // Display results
-        console.log('\n=== Refactoring Results ===');
-        console.log(`Files processed: ${result.processedFiles.length}`);
-        console.log(`Files renamed: ${result.renamedFiles.length}`);
-        console.log(`Content changes: ${result.contentChanges.length}`);
-        console.log(`Manual review required: ${result.manualReviewRequired.length}`);
-        console.log(`Errors: ${result.errors.length}`);
-
-        if (result.renamedFiles.length > 0) {
-          console.log('\n--- File Renames ---');
-          result.renamedFiles.forEach(rename => {
-            console.log(`${getRelativePath(rename.oldPath)} -> ${getRelativePath(rename.newPath)}`);
-            console.log(`  Reason: ${rename.reason}`);
-          });
+        // Display results with beautiful formatting
+        formatter.printSummary(result);
+        formatter.printRenamedFiles(result.renamedFiles);
+        
+        if (options.verbose) {
+          formatter.printContentChanges(result.contentChanges);
         }
+        
+        formatter.printManualReviewItems(result.manualReviewRequired);
+        formatter.printErrors(result.errors);
 
-        if (result.contentChanges.length > 0 && options.verbose) {
-          console.log('\n--- Content Changes ---');
-          const changesByFile = result.contentChanges.reduce(
-            (acc, change) => {
-              if (!acc[change.filePath]) {
-                acc[change.filePath] = [];
-              }
-              acc[change.filePath].push(change);
-              return acc;
-            },
-            {} as Record<string, typeof result.contentChanges>
-          );
+        // Final completion message
+        const hasChanges = result.renamedFiles.length > 0 || result.contentChanges.length > 0;
+        formatter.printCompletionMessage(hasChanges, options.dryRun);
 
-          Object.entries(changesByFile).forEach(([filePath, changes]) => {
-            console.log(`\n${getRelativePath(filePath)}:`);
-            changes.forEach(change => {
-              console.log(`  Line ${change.line}: ${change.reason}`);
-              if (change.oldContent.trim()) {
-                console.log(`    - ${change.oldContent.trim()}`);
-              }
-              if (change.newContent.trim()) {
-                console.log(`    + ${change.newContent.trim()}`);
-              }
-            });
-          });
-        }
-
-        if (result.manualReviewRequired.length > 0) {
-          console.log('\n--- Manual Review Required ---');
-          console.log('The following files require manual attention due to naming conflicts:');
-          result.manualReviewRequired.forEach((item, index) => {
-            console.log(`\n${index + 1}. ${getRelativePath(item.filePath)}`);
-            console.log(
-              `   Desired rename: ${getRelativePath(item.filePath)} -> ${getRelativePath(item.desiredNewPath)}`
-            );
-            console.log(`   Issue: ${item.reason}`);
-            console.log(`   Action needed: Resolve the naming conflict manually`);
-          });
-        }
-
-        if (result.errors.length > 0) {
-          console.log('\n--- Errors ---');
-          result.errors.forEach(error => {
-            console.error(`${getRelativePath(error.filePath)}: ${error.message}`);
-            if (error.line) {
-              console.error(`  Line: ${error.line}`);
-            }
-          });
-        }
-
-        if (options.dryRun) {
-          console.log('\n⚠️  This was a dry run. No files were actually modified.');
-          console.log('Run without --dry-run to apply changes.');
-        } else if (result.renamedFiles.length > 0 || result.contentChanges.length > 0) {
-          console.log('\n✅ Refactoring completed successfully!');
-        } else {
-          console.log('\n✨ No changes needed. Your Angular code already follows the naming conventions!');
-        }
       } catch (error) {
-        console.error('An unexpected error occurred:', error instanceof Error ? error.message : String(error));
+        formatter.printError(`An error occurred during refactoring: ${error instanceof Error ? error.message : String(error)}`);
         process.exit(1);
       }
     }
