@@ -122,28 +122,46 @@ export class AssociatedFileHandler {
     const newFileBase = newFileName.replace(/\.[^.]+$/, ''); // Remove extension
     
     // Common import patterns to update (both with and without extensions)
+    // Updated patterns to match both forward slashes and backslashes in paths
     const importPatterns = [
-      // Pattern for imports without extensions: from './user.service'
-      new RegExp(`from\\s+['"\`]\\.\\/([^'"\`]*\\/)?(${oldFileBase.replace(/\./g, '\\.')})['"\`]`, 'g'),
-      new RegExp(`import\\s+['"\`]\\.\\/([^'"\`]*\\/)?(${oldFileBase.replace(/\./g, '\\.')})['"\`]`, 'g'),
-      // Pattern for imports with extensions: from './user.service.ts'
-      new RegExp(`from\\s+['"\`]\\.\\/([^'"\`]*\\/)?(${oldFileName.replace(/\./g, '\\.')})['"\`]`, 'g'),
-      new RegExp(`import\\s+['"\`]\\.\\/([^'"\`]*\\/)?(${oldFileName.replace(/\./g, '\\.')})['"\`]`, 'g')
+      // Pattern for imports without extensions: from './user.service' or from './path\user.service'
+      new RegExp(`from\\s+['"\`]\\.\\/([^'"\`]*[/\\\\])?(${oldFileBase.replace(/\./g, '\\.')})['"\`]`, 'g'),
+      new RegExp(`import\\s+['"\`]\\.\\/([^'"\`]*[/\\\\])?(${oldFileBase.replace(/\./g, '\\.')})['"\`]`, 'g'),
+      // Pattern for imports with extensions: from './user.service.ts' or from './path\user.service.ts'
+      new RegExp(`from\\s+['"\`]\\.\\/([^'"\`]*[/\\\\])?(${oldFileName.replace(/\./g, '\\.')})['"\`]`, 'g'),
+      new RegExp(`import\\s+['"\`]\\.\\/([^'"\`]*[/\\\\])?(${oldFileName.replace(/\./g, '\\.')})['"\`]`, 'g')
     ];
 
     for (const pattern of importPatterns) {
       updatedContent = updatedContent.replace(pattern, (match, pathPrefix = '', fileName) => {
+        // Normalize path separators to forward slashes
+        const normalizedPathPrefix = pathPrefix.replace(/\\/g, '/');
+        
         // If the match includes the full filename with extension, replace with new base name (no extension)
         if (fileName === oldFileName) {
-          return match.replace(oldFileName, newFileBase);
+          const replacement = match.replace(oldFileName, newFileBase);
+          return replacement.replace(pathPrefix, normalizedPathPrefix);
         }
         // If the match is just the base name, replace with new base name
         if (fileName === oldFileBase) {
-          return match.replace(oldFileBase, newFileBase);
+          const replacement = match.replace(oldFileBase, newFileBase);
+          return replacement.replace(pathPrefix, normalizedPathPrefix);
         }
         return match;
       });
     }
+
+    // Additional step: normalize all remaining backslashes in import paths to forward slashes
+    // This handles imports that weren't specifically renamed but may contain backslashes
+    updatedContent = updatedContent.replace(
+      /(from\s+['"`]\.\/[^'"`]*['"`])/g,
+      (match) => match.replace(/\\/g, '/')
+    );
+    
+    updatedContent = updatedContent.replace(
+      /(import\s+['"`]\.\/[^'"`]*['"`])/g,
+      (match) => match.replace(/\\/g, '/')
+    );
 
     return updatedContent;
   }
