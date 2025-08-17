@@ -76,13 +76,13 @@ describe('Spec File Renaming Tests', () => {
 
     // Check that both files were reported as renamed
     expect(result.renamedFiles).toHaveLength(2);
-    
+
     const serviceRename = result.renamedFiles.find(r => r.oldPath.includes('snackbar.service.ts'));
     const specRename = result.renamedFiles.find(r => r.oldPath.includes('snackbar.service.spec.ts'));
-    
+
     expect(serviceRename).toBeDefined();
     expect(serviceRename?.newPath).toContain('snackbar-notifications.ts');
-    
+
     expect(specRename).toBeDefined();
     expect(specRename?.newPath).toContain('snackbar-notifications.spec.ts');
 
@@ -148,13 +148,13 @@ describe('Spec File Renaming Tests', () => {
 
     // Check that both files were reported as renamed
     expect(result.renamedFiles).toHaveLength(2);
-    
+
     const componentRename = result.renamedFiles.find(r => r.oldPath.includes('user-profile.component.ts'));
     const specRename = result.renamedFiles.find(r => r.oldPath.includes('user-profile.component.spec.ts'));
-    
+
     expect(componentRename).toBeDefined();
     expect(componentRename?.newPath).toContain('user-profile.ts');
-    
+
     expect(specRename).toBeDefined();
     expect(specRename?.newPath).toContain('user-profile.spec.ts');
 

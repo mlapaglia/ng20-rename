@@ -77,8 +77,6 @@ describe('Import Statement Update Tests', () => {
     const refactorer = new AngularRefactorer(options);
     const result = await refactorer.refactor();
 
-
-
     // The service should be renamed to snackbar.ts
     expect(fs.existsSync(path.join(tempDir, 'snackbar.ts'))).toBe(true);
     expect(fs.existsSync(path.join(tempDir, 'snackbar.service.ts'))).toBe(false);
@@ -88,13 +86,15 @@ describe('Import Statement Update Tests', () => {
 
     // Check that all files were reported as renamed (service, model, component)
     expect(result.renamedFiles).toHaveLength(3);
-    
+
     const serviceRename = result.renamedFiles.find(r => r.oldPath.includes('snackbar.service.ts'));
-    const modelRename = result.renamedFiles.find(r => r.oldPath.includes('snackbar.ts') && !r.oldPath.includes('service'));
-    
+    const modelRename = result.renamedFiles.find(
+      r => r.oldPath.includes('snackbar.ts') && !r.oldPath.includes('service')
+    );
+
     expect(serviceRename).toBeDefined();
     expect(serviceRename?.newPath).toContain('snackbar.ts');
-    
+
     expect(modelRename).toBeDefined();
     expect(modelRename?.newPath).toContain('snackbar-interface.ts');
 
@@ -111,7 +111,7 @@ describe('Import Statement Update Tests', () => {
     // Verify that content changes were reported
     const componentContentChanges = result.contentChanges.filter(c => c.filePath.includes('notification.ts'));
     const utilContentChanges = result.contentChanges.filter(c => c.filePath.includes('utils.ts'));
-    
+
     expect(componentContentChanges.length).toBeGreaterThan(0);
     expect(utilContentChanges.length).toBeGreaterThan(0);
   });
@@ -163,8 +163,6 @@ describe('Import Statement Update Tests', () => {
 
     const refactorer = new AngularRefactorer(options);
     const result = await refactorer.refactor();
-
-
 
     // The service should be renamed to notification-notifications.ts (smart domain detection)
     expect(fs.existsSync(path.join(tempDir, 'notification-notifications.ts'))).toBe(true);
@@ -238,7 +236,7 @@ describe('Import Statement Update Tests', () => {
     };
 
     const refactorer = new AngularRefactorer(options);
-    const result = await refactorer.refactor();
+    await refactorer.refactor();
 
     // The service should be renamed to user.ts, causing the model to be renamed to user-model.ts
     expect(fs.existsSync(path.join(tempDir, 'user.ts'))).toBe(true);
@@ -251,6 +249,6 @@ describe('Import Statement Update Tests', () => {
     expect(updatedFile1Content).toContain('import type { UserRole } from "./user-model";');
 
     const updatedFile2Content = fs.readFileSync(path.join(tempDir, 'user-factory.ts'), 'utf-8');
-    expect(updatedFile2Content).toContain("import { User, UserRole } from `./user-model`;");
+    expect(updatedFile2Content).toContain('import { User, UserRole } from `./user-model`;');
   });
 });

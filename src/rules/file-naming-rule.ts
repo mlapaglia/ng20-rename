@@ -72,7 +72,13 @@ export class FileNamingRule extends RenameRule {
         }
 
         // For all file types, check for associated spec files
-        const specResult = this.getSpecFileRenames(file.path, fileNameWithoutExt, className, file.type, expectedFileName);
+        const specResult = this.getSpecFileRenames(
+          file.path,
+          fileNameWithoutExt,
+          className,
+          file.type,
+          expectedFileName
+        );
         if (specResult.renames.length > 0) {
           result.additionalRenames = (result.additionalRenames || []).concat(specResult.renames);
         }
@@ -296,7 +302,7 @@ export class FileNamingRule extends RenameRule {
 
     // Look for corresponding spec file
     const oldSpecPath = join(fileDir, `${currentFileNameWithoutExt}.spec.ts`);
-    
+
     if (existsSync(oldSpecPath)) {
       // Get the new base name from the expected file name (without extension)
       const expectedFileNameWithoutExt = basename(expectedFileName, extname(expectedFileName));
@@ -334,17 +340,13 @@ export class FileNamingRule extends RenameRule {
   /**
    * Updates import statements in spec files to match renamed source files
    */
-  private updateSpecFileImports(
-    specContent: string,
-    oldFileName: string,
-    newFileName: string
-  ): string {
+  private updateSpecFileImports(specContent: string, oldFileName: string, newFileName: string): string {
     let updatedContent = specContent;
 
     // Update relative imports that reference the old file name
     const importPatterns = [
-      new RegExp(`from\\s+['"\`]\\.\/${oldFileName}['"\`]`, 'g'),
-      new RegExp(`from\\s+['"\`]\\.\/${oldFileName}\\.ts['"\`]`, 'g'),
+      new RegExp(`from\\s+['"\`]\\./${oldFileName}['"\`]`, 'g'),
+      new RegExp(`from\\s+['"\`]\\./${oldFileName}\\.ts['"\`]`, 'g')
     ];
 
     for (const pattern of importPatterns) {
