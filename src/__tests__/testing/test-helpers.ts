@@ -170,9 +170,7 @@ export class PerformanceTestUtils {
     const result = await fn();
     const timeMs = performance.now() - start;
     
-    if (description) {
-      console.log(`⏱️ ${description}: ${timeMs.toFixed(2)}ms`);
-    }
+
     
     return { result, timeMs };
   }
@@ -198,12 +196,7 @@ export class PerformanceTestUtils {
     const minMs = Math.min(...times);
     const maxMs = Math.max(...times);
 
-    if (description) {
-      console.log(`📊 ${description} (${iterations} iterations):`);
-      console.log(`   Average: ${avgMs.toFixed(2)}ms`);
-      console.log(`   Min: ${minMs.toFixed(2)}ms`);
-      console.log(`   Max: ${maxMs.toFixed(2)}ms`);
-    }
+
 
     return { avgMs, minMs, maxMs, results };
   }

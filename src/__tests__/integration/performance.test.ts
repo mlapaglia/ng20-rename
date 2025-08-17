@@ -54,7 +54,7 @@ describe('Performance Benchmarks', () => {
 
       // Virtual FS should be significantly faster
       expect(virtualResult.avgMs).toBeLessThan(realResult.avgMs);
-      console.log(`🚀 Virtual FS is ${(realResult.avgMs / virtualResult.avgMs).toFixed(1)}x faster`);
+
     });
 
     it('should parse imports faster with larger codebases', async () => {
@@ -123,7 +123,7 @@ describe('Performance Benchmarks', () => {
       const afterCreationMemory = process.memoryUsage().heapUsed;
       const memoryIncreaseMB = (afterCreationMemory - initialMemory) / 1024 / 1024;
 
-      console.log(`📊 Memory usage for 100+ file project: ${memoryIncreaseMB.toFixed(2)}MB`);
+
       
       // Should use reasonable amount of memory (less than 50MB for 100 files)
       expect(memoryIncreaseMB).toBeLessThan(50);
@@ -161,7 +161,7 @@ describe('Performance Benchmarks', () => {
       const scalingFactor = lastResult.timeMs / firstResult.timeMs;
       const fileSizeRatio = lastResult.fileCount / firstResult.fileCount;
 
-      console.log(`📈 Scaling factor: ${scalingFactor.toFixed(2)}x for ${fileSizeRatio}x files`);
+
       
       // Should scale better than linearly (due to optimizations)
       expect(scalingFactor).toBeLessThan(fileSizeRatio * 1.5);
@@ -237,10 +237,7 @@ describe('Performance Benchmarks', () => {
         }
       });
 
-      console.log(`⚡ Performance comparison:`);
-      console.log(`   Virtual FS: ${virtualTime.timeMs.toFixed(2)}ms`);
-      console.log(`   Real FS: ${realTime.timeMs.toFixed(2)}ms`);
-      console.log(`   Speedup: ${(realTime.timeMs / virtualTime.timeMs).toFixed(1)}x faster`);
+
 
       // Virtual FS should be significantly faster
       expect(virtualTime.timeMs).toBeLessThan(realTime.timeMs);
