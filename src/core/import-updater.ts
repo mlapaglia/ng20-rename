@@ -22,17 +22,20 @@ export class ImportUpdater {
       renameMap.set(renamed.oldPath, renamed.newPath);
     }
 
-    // Find all TypeScript files that might contain imports
-    const allTsFiles = this.findAllTypeScriptFiles(rootDir);
+    // Find all TypeScript files that might contain imports (after renaming)
+    const currentTsFiles = this.findAllTypeScriptFiles(rootDir);
 
-    for (const filePath of allTsFiles) {
-      // Skip files that were renamed (they'll be processed by their new names)
-      if (renameMap.has(filePath)) {
-        continue;
-      }
+    // Also include any original files that might not have been found (in case of complex renames)
+    const originalTsFiles = Array.from(renameMap.keys()).filter(path => path.endsWith('.ts'));
 
-      // Check if the file exists (might have been renamed)
+    // Combine and deduplicate all files to process
+    const allFilesToProcess = new Set([...currentTsFiles, ...originalTsFiles]);
+
+    for (const filePath of allFilesToProcess) {
+      // For renamed files, use their new path; for non-renamed files, use original path
       const actualFilePath = renameMap.get(filePath) || filePath;
+
+      // Check if the file exists at its actual location
       if (!existsSync(actualFilePath)) {
         continue;
       }
@@ -82,8 +85,8 @@ export class ImportUpdater {
 
       // Only process relative imports (starting with ./ or ../)
       if (importPath.startsWith('./') || importPath.startsWith('../')) {
-        // Resolve the full path of the imported file
-        const resolvedImportPath = this.resolveImportPath(fileDir, importPath);
+        // Try to resolve the import path considering renames
+        const resolvedImportPath = this.resolveImportPathWithRenames(fileDir, importPath, renameMap);
 
         // Check if this file was renamed
         const newPath = renameMap.get(resolvedImportPath);
@@ -110,7 +113,37 @@ export class ImportUpdater {
   }
 
   /**
-   * Resolves a relative import path to an absolute path
+   * Resolves a relative import path to an absolute path, considering renames
+   */
+  private resolveImportPathWithRenames(fromDir: string, importPath: string, renameMap: Map<string, string>): string {
+    // Handle relative imports
+    const resolvedPath = join(fromDir, importPath);
+
+    // Always try adding .ts extension first (most common case)
+    const possiblePaths = [resolvedPath + '.ts', resolvedPath + '.js', resolvedPath];
+
+    // First, try to find the path in the rename map (original file names)
+    for (const originalPath of renameMap.keys()) {
+      for (const possiblePath of possiblePaths) {
+        if (originalPath === possiblePath) {
+          return originalPath;
+        }
+      }
+    }
+
+    // Then try to find existing files (for files that weren't renamed)
+    for (const path of possiblePaths) {
+      if (existsSync(path)) {
+        return path;
+      }
+    }
+
+    // Default to .ts if file doesn't exist yet (might be renamed)
+    return resolvedPath + '.ts';
+  }
+
+  /**
+   * Resolves a relative import path to an absolute path (legacy method)
    */
   private resolveImportPath(fromDir: string, importPath: string): string {
     // Handle relative imports
