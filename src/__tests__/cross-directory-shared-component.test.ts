@@ -22,7 +22,7 @@ describe('Cross-Directory Shared Component Tests', () => {
     const sharedDir = path.join(tempDir, 'src', 'app', 'shared', 'components');
     const featuresDir = path.join(tempDir, 'src', 'app', 'features', 'user');
     const pagesDir = path.join(tempDir, 'src', 'app', 'pages');
-    
+
     fs.mkdirSync(sharedDir, { recursive: true });
     fs.mkdirSync(featuresDir, { recursive: true });
     fs.mkdirSync(pagesDir, { recursive: true });
@@ -133,18 +133,30 @@ export class AppModule { }
 
     // Check that imports were updated in user-list component (2 levels deep)
     const updatedUserListContent = fs.readFileSync(path.join(featuresDir, 'user-list.ts'), 'utf-8');
-    expect(updatedUserListContent).toContain("import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner';");
-    expect(updatedUserListContent).not.toContain("import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner.component';");
+    expect(updatedUserListContent).toContain(
+      "import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner';"
+    );
+    expect(updatedUserListContent).not.toContain(
+      "import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner.component';"
+    );
 
     // Check that imports were updated in user-profile component (2 levels deep)
     const updatedUserProfileContent = fs.readFileSync(path.join(featuresDir, 'user-profile.ts'), 'utf-8');
-    expect(updatedUserProfileContent).toContain("import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner';");
-    expect(updatedUserProfileContent).not.toContain("import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner.component';");
+    expect(updatedUserProfileContent).toContain(
+      "import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner';"
+    );
+    expect(updatedUserProfileContent).not.toContain(
+      "import { LoadingSpinnerComponent } from '../../shared/components/loading-spinner.component';"
+    );
 
     // Check that imports were updated in dashboard component (1 level deep)
     const updatedDashboardContent = fs.readFileSync(path.join(pagesDir, 'dashboard.ts'), 'utf-8');
-    expect(updatedDashboardContent).toContain("import { LoadingSpinnerComponent } from '../shared/components/loading-spinner';");
-    expect(updatedDashboardContent).not.toContain("import { LoadingSpinnerComponent } from '../shared/components/loading-spinner.component';");
+    expect(updatedDashboardContent).toContain(
+      "import { LoadingSpinnerComponent } from '../shared/components/loading-spinner';"
+    );
+    expect(updatedDashboardContent).not.toContain(
+      "import { LoadingSpinnerComponent } from '../shared/components/loading-spinner.component';"
+    );
 
     // Check that imports were updated in app module (check what it was renamed to)
     let appModuleFile: string;
@@ -156,10 +168,14 @@ export class AppModule { }
       // Module files might keep their .module.ts extension
       appModuleFile = 'app.module.ts';
     }
-    
+
     const updatedAppModuleContent = fs.readFileSync(path.join(tempDir, 'src', 'app', appModuleFile), 'utf-8');
-    expect(updatedAppModuleContent).toContain("import { LoadingSpinnerComponent } from './shared/components/loading-spinner';");
-    expect(updatedAppModuleContent).not.toContain("import { LoadingSpinnerComponent } from './shared/components/loading-spinner.component';");
+    expect(updatedAppModuleContent).toContain(
+      "import { LoadingSpinnerComponent } from './shared/components/loading-spinner';"
+    );
+    expect(updatedAppModuleContent).not.toContain(
+      "import { LoadingSpinnerComponent } from './shared/components/loading-spinner.component';"
+    );
 
     // Verify that the class name remains the same (LoadingSpinnerComponent)
     // This is important - the class name should NOT change, only the file name
@@ -175,9 +191,7 @@ export class AppModule { }
     expect(result.contentChanges.length).toBeGreaterThan(0);
 
     // Verify that the shared component rename was captured
-    const sharedComponentRename = result.renamedFiles.find(r => 
-      r.oldPath.includes('loading-spinner.component.ts')
-    );
+    const sharedComponentRename = result.renamedFiles.find(r => r.oldPath.includes('loading-spinner.component.ts'));
     expect(sharedComponentRename).toBeDefined();
     expect(sharedComponentRename?.newPath).toContain('loading-spinner.ts');
 
@@ -192,7 +206,7 @@ export class AppModule { }
     // Create directory structure for services test
     const sharedServicesDir = path.join(tempDir, 'src', 'app', 'shared', 'services');
     const featuresDir = path.join(tempDir, 'src', 'app', 'features', 'products');
-    
+
     fs.mkdirSync(sharedServicesDir, { recursive: true });
     fs.mkdirSync(featuresDir, { recursive: true });
 
@@ -263,18 +277,22 @@ export class ProductDetailComponent {
     // Check that imports were updated in both product components
     const updatedProductListContent = fs.readFileSync(path.join(featuresDir, 'product-list.ts'), 'utf-8');
     expect(updatedProductListContent).toContain("import { DataService } from '../../shared/services/data-api';");
-    expect(updatedProductListContent).not.toContain("import { DataService } from '../../shared/services/data.service';");
+    expect(updatedProductListContent).not.toContain(
+      "import { DataService } from '../../shared/services/data.service';"
+    );
 
     const updatedProductDetailContent = fs.readFileSync(path.join(featuresDir, 'product-detail.ts'), 'utf-8');
     expect(updatedProductDetailContent).toContain("import { DataService } from '../../shared/services/data-api';");
-    expect(updatedProductDetailContent).not.toContain("import { DataService } from '../../shared/services/data.service';");
+    expect(updatedProductDetailContent).not.toContain(
+      "import { DataService } from '../../shared/services/data.service';"
+    );
 
     // Verify class name remains the same
     const updatedServiceContent = fs.readFileSync(path.join(sharedServicesDir, 'data-api.ts'), 'utf-8');
     expect(updatedServiceContent).toContain('export class DataService');
 
     expect(result.errors).toHaveLength(0);
-    
+
     console.log('✅ Cross-directory shared service test passed!');
   });
 });

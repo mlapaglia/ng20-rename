@@ -159,8 +159,6 @@ export class ImportUpdater {
       const oldWithoutExt = this.removeExtension(oldPathResolved);
       const newWithoutExt = this.removeExtension(newPathResolved);
       pathMap.set(oldWithoutExt, newWithoutExt);
-
-
     }
 
     return pathMap;
@@ -297,12 +295,12 @@ export class ImportUpdater {
    */
   private calculateRelativeImportPath(fromFilePath: string, toFilePath: string, originalImportPath?: string): string {
     const fromDir = dirname(fromFilePath);
-    
+
     // If we have the original import path, we need to preserve its extension style
     if (originalImportPath) {
       // Check if the original import had an explicit .ts/.js extension
       const hasExplicitExtension = originalImportPath.endsWith('.ts') || originalImportPath.endsWith('.js');
-      
+
       let toFileForCalculation: string;
       if (hasExplicitExtension) {
         // Keep the extension for calculation
@@ -311,9 +309,9 @@ export class ImportUpdater {
         // Remove the .ts extension but preserve other parts of the filename
         toFileForCalculation = this.removeExtension(toFilePath);
       }
-      
+
       let relativePath = relative(fromDir, toFileForCalculation);
-      
+
       // Normalize path separators to forward slashes (TypeScript/ES modules standard)
       relativePath = relativePath.replace(/\\/g, '/');
 
@@ -324,7 +322,7 @@ export class ImportUpdater {
 
       return relativePath;
     }
-    
+
     // Fallback to original behavior if no original import path provided
     const toFileWithoutExt = this.removeExtension(toFilePath);
     let relativePath = relative(fromDir, toFileWithoutExt);
