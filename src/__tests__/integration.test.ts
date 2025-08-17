@@ -42,9 +42,6 @@ describe('Integration Tests - Complete Angular App Refactoring', () => {
     // Verify content changes occurred
     expect(result.contentChanges.length).toBeGreaterThan(0);
 
-    // Log summary for verification
-    console.log('Integration test completed successfully!');
-
     // Verify specific transformations
     verifyComponentTransformations();
     verifyServiceTransformations();
@@ -55,12 +52,6 @@ describe('Integration Tests - Complete Angular App Refactoring', () => {
     verifyInterceptorTransformations();
     verifyResolverTransformations();
     verifyFileNaming();
-
-    console.log('Integration test results:');
-    console.log(`- Files processed: ${result.processedFiles.length}`);
-    console.log(`- Files renamed: ${result.renamedFiles.length}`);
-    console.log(`- Content changes: ${result.contentChanges.length}`);
-    console.log(`- Errors: ${result.errors.length}`);
   });
 
   function setupOldStyleAngularApp() {

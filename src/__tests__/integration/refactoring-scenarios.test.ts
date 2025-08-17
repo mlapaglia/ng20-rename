@@ -217,10 +217,6 @@ describe('Refactoring Scenarios - Integration Tests', () => {
       
       // Some imports might be broken due to conflict resolution - this is expected
       // and would need to be handled by the actual refactoring tool
-      console.log('Files after conflict resolution:', files);
-      if (brokenImports.length > 0) {
-        console.log('Broken imports (expected due to conflict resolution):', brokenImports);
-      }
     });
   });
 
@@ -292,9 +288,8 @@ describe('Refactoring Scenarios - Integration Tests', () => {
       const scenario = new TestScenarioBuilder(vfs);
       simulateRefactoring(vfs, scenario);
 
-      // Log the results for analysis
+      // Verify the results
       const files = vfs.getAllFiles();
-      console.log('Snackbar refactoring results:', files);
 
       // Verify key files exist (allowing for conflict resolution)
       const hasSnackbarComponent = files.some(f => f.includes('snackbar') && !f.includes('service') && !f.includes('type'));
@@ -307,10 +302,7 @@ describe('Refactoring Scenarios - Integration Tests', () => {
 
       // Check for broken imports
       const brokenImports = findAllBrokenImports(vfs, files);
-      if (brokenImports.length > 0) {
-        console.log('Broken imports in snackbar scenario:', brokenImports);
-        // This might be expected due to conflict resolution
-      }
+      // Note: Some imports might be broken due to conflict resolution - this is expected
     });
   });
 
@@ -346,7 +338,6 @@ describe('Refactoring Scenarios - Integration Tests', () => {
       
       // Component should be renamed to user.ts or similar
       const files = vfs.getAllFiles();
-      console.log('User conflict resolution files:', files);
       
       // Should have the original interface and the renamed component
       expect(files).toContain('src/user.ts');
@@ -385,7 +376,6 @@ describe('Refactoring Scenarios - Integration Tests', () => {
       
       // Service should be renamed to avoid conflict
       const files = vfs.getAllFiles();
-      console.log('Auth service renaming files:', files);
       
       const hasRenamedService = files.some(f => f.includes('auth') && f !== 'src/auth.ts');
       expect(hasRenamedService).toBe(true);

@@ -297,8 +297,8 @@ describe('FileNamingRule', () => {
 
       expect(result.newFileName).toBeUndefined();
       expect(result.manualReviewRequired).toHaveLength(1);
-      expect(result.manualReviewRequired![0].filePath).toBe('/test/user.component.ts'.replace(/\//g, path.sep));
-      expect(result.manualReviewRequired![0].desiredNewPath).toBe('/test/user.ts'.replace(/\//g, path.sep));
+      expect(path.normalize(result.manualReviewRequired![0].filePath)).toBe(path.normalize('/test/user.component.ts'));
+      expect(path.normalize(result.manualReviewRequired![0].desiredNewPath)).toBe(path.normalize('/test/user.ts'));
       expect(result.manualReviewRequired![0].reason).toContain('Could not determine domain for conflicting file');
     });
 

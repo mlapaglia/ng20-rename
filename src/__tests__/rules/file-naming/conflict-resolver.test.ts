@@ -2,6 +2,7 @@ import { ConflictResolver } from '../../../rules/file-naming/conflict-resolver';
 import { AngularFileType } from '../../../types';
 import { existsSync, readFileSync } from 'fs';
 import { TsFileDomainDetector } from '../../../rules/ts-file-domain-detector';
+import { normalize } from 'path';
 
 jest.mock('fs');
 jest.mock('../../../rules/ts-file-domain-detector');
@@ -228,14 +229,10 @@ describe('ConflictResolver', () => {
 
         const result = resolver.attemptConflictResolution('/path/to/utility.ts');
 
-        expect(result).toEqual({
-          resolved: true,
-          reason: 'Renamed conflicting file to utility-auth.ts (detected domain: -auth)',
-          conflictingFileRename: {
-            oldPath: '/path/to/utility.ts',
-            newPath: '/path/to/utility-auth.ts'
-          }
-        });
+        expect(result.resolved).toBe(true);
+        expect(result.reason).toBe('Renamed conflicting file to utility-auth.ts (detected domain: -auth)');
+        expect(normalize(result.conflictingFileRename!.oldPath)).toBe(normalize('/path/to/utility.ts'));
+        expect(normalize(result.conflictingFileRename!.newPath)).toBe(normalize('/path/to/utility-auth.ts'));
       });
 
       it('should handle files in subdirectories', () => {
@@ -250,14 +247,10 @@ describe('ConflictResolver', () => {
 
         const result = resolver.attemptConflictResolution('/path/to/subdir/helper.ts');
 
-        expect(result).toEqual({
-          resolved: true,
-          reason: 'Renamed conflicting file to helper-user.ts (detected domain: -user)',
-          conflictingFileRename: {
-            oldPath: '/path/to/subdir/helper.ts',
-            newPath: '/path/to/subdir/helper-user.ts'
-          }
-        });
+        expect(result.resolved).toBe(true);
+        expect(result.reason).toBe('Renamed conflicting file to helper-user.ts (detected domain: -user)');
+        expect(normalize(result.conflictingFileRename!.oldPath)).toBe(normalize('/path/to/subdir/helper.ts'));
+        expect(normalize(result.conflictingFileRename!.newPath)).toBe(normalize('/path/to/subdir/helper-user.ts'));
       });
     });
 

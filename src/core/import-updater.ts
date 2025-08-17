@@ -1,12 +1,103 @@
-import { readFileSync, writeFileSync, existsSync, readdirSync } from 'fs';
-import { dirname, basename, join, relative, extname } from 'path';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { dirname, basename, join, relative, extname, resolve } from 'path';
 import { RefactorResult, RenamedFile, ContentChange } from '../types';
 
 /**
- * Handles updating import statements across all files when files are renamed
+ * Represents a parsed import statement
+ */
+interface ParsedImport {
+  /** The full import statement text */
+  fullStatement: string;
+  /** The import path (what's between the quotes) */
+  importPath: string;
+  /** The line number where the import was found (1-based) */
+  lineNumber: number;
+  /** The start position of the import path in the line */
+  startPos: number;
+  /** The end position of the import path in the line */
+  endPos: number;
+}
+
+/**
+ * Result of updating imports in a file
+ */
+interface ImportUpdateResult {
+  /** Whether any imports were updated */
+  hasChanges: boolean;
+  /** The updated content */
+  content: string;
+  /** List of changes made */
+  changes: ContentChange[];
+}
+
+/**
+ * Interface for file system operations (allows for easy testing)
+ */
+interface FileSystem {
+  readFile(path: string): string;
+  writeFile(path: string, content: string): void;
+  exists(path: string): boolean;
+  getAllTsFiles(rootDir: string): string[];
+}
+
+/**
+ * Real file system implementation
+ */
+class RealFileSystem implements FileSystem {
+  readFile(path: string): string {
+    return readFileSync(path, 'utf-8');
+  }
+
+  writeFile(path: string, content: string): void {
+    writeFileSync(path, content, 'utf-8');
+  }
+
+  exists(path: string): boolean {
+    return existsSync(path);
+  }
+
+  getAllTsFiles(rootDir: string): string[] {
+    const { readdirSync } = require('fs');
+    const files: string[] = [];
+
+    function walkDir(dir: string) {
+      try {
+        const entries = readdirSync(dir, { withFileTypes: true });
+
+        for (const entry of entries) {
+          const fullPath = join(dir, entry.name);
+
+          if (entry.isDirectory()) {
+            // Skip common directories that shouldn't contain imports
+            if (!['node_modules', 'dist', '.git'].includes(entry.name)) {
+              walkDir(fullPath);
+            }
+          } else if (entry.isFile() && entry.name.endsWith('.ts')) {
+            files.push(fullPath);
+          }
+        }
+      } catch (error) {
+        // Skip directories we can't read
+      }
+    }
+
+    walkDir(rootDir);
+    return files;
+  }
+}
+
+/**
+ * Improved import updater with better separation of concerns and testability
  */
 export class ImportUpdater {
-  constructor(private dryRun: boolean) {}
+  private fileSystem: FileSystem;
+
+  constructor(
+    private dryRun: boolean,
+    fileSystem?: FileSystem
+  ) {
+    this.fileSystem = fileSystem || new RealFileSystem();
+  }
 
   /**
    * Updates import statements in all files based on the renamed files
@@ -16,48 +107,35 @@ export class ImportUpdater {
       return;
     }
 
-    // Create a map of old paths to new paths for quick lookup
-    const renameMap = new Map<string, string>();
-    for (const renamed of renamedFiles) {
-      renameMap.set(renamed.oldPath, renamed.newPath);
-    }
+    // Create a mapping of old absolute paths to new absolute paths
+    const pathMap = this.createPathMapping(renamedFiles);
 
-    // Find all TypeScript files that might contain imports
-    const allTsFiles = this.findAllTypeScriptFiles(rootDir);
+    // Get all TypeScript files that might contain imports
+    const allTsFiles = this.fileSystem.getAllTsFiles(rootDir);
 
+    // For each file, check and update imports
     for (const filePath of allTsFiles) {
-      // Skip files that were renamed (they'll be processed by their new names)
-      if (renameMap.has(filePath)) {
-        continue;
-      }
-
-      // Check if the file exists (might have been renamed)
-      const actualFilePath = renameMap.get(filePath) || filePath;
-      if (!existsSync(actualFilePath)) {
-        continue;
-      }
-
       try {
-        const content = readFileSync(actualFilePath, 'utf-8');
+        // Check if this file exists (it might have been renamed)
+        const actualFilePath = this.getActualFilePath(filePath, pathMap);
+        
+        if (!this.fileSystem.exists(actualFilePath)) {
+          continue;
+        }
 
-        const updatedContent = this.updateImportsInFile(content, actualFilePath, renameMap);
+        const content = this.fileSystem.readFile(actualFilePath);
+        const updateResult = this.updateImportsInFile(content, actualFilePath, pathMap);
 
-        if (updatedContent !== content) {
-          const changes = this.getContentChanges(
-            actualFilePath,
-            content,
-            updatedContent,
-            'Updated import statements for renamed files'
-          );
-          result.contentChanges.push(...changes);
+        if (updateResult.hasChanges) {
+          result.contentChanges.push(...updateResult.changes);
 
           if (!this.dryRun) {
-            writeFileSync(actualFilePath, updatedContent, 'utf-8');
+            this.fileSystem.writeFile(actualFilePath, updateResult.content);
           }
         }
       } catch (error) {
         result.errors.push({
-          filePath: actualFilePath,
+          filePath: filePath,
           message: `Failed to update imports: ${error instanceof Error ? error.message : String(error)}`
         });
       }
@@ -65,146 +143,180 @@ export class ImportUpdater {
   }
 
   /**
-   * Updates import statements in a single file
+   * Creates a mapping from old absolute paths to new absolute paths
    */
-  private updateImportsInFile(content: string, filePath: string, renameMap: Map<string, string>): string {
+  private createPathMapping(renamedFiles: RenamedFile[]): Map<string, string> {
+    const pathMap = new Map<string, string>();
+    
+    for (const renamed of renamedFiles) {
+      // Store both with and without extensions for flexible matching
+      const oldPathResolved = resolve(renamed.oldPath);
+      const newPathResolved = resolve(renamed.newPath);
+      
+      pathMap.set(oldPathResolved, newPathResolved);
+      
+      // Also store without extension for import resolution
+      const oldWithoutExt = this.removeExtension(oldPathResolved);
+      const newWithoutExt = this.removeExtension(newPathResolved);
+      pathMap.set(oldWithoutExt, newWithoutExt);
+    }
+    
+    return pathMap;
+  }
+
+  /**
+   * Gets the actual file path, accounting for renames
+   * Since getAllTsFiles returns current existing files, we don't need to map them
+   */
+  private getActualFilePath(originalPath: string, pathMap: Map<string, string>): string {
+    // The files returned by getAllTsFiles() are already the current paths after renames
+    // We don't need to map them again
+    return originalPath;
+  }
+
+  /**
+   * Updates imports in a single file content
+   */
+  private updateImportsInFile(content: string, filePath: string, pathMap: Map<string, string>): ImportUpdateResult {
+    const imports = this.parseImports(content);
+    const changes: ContentChange[] = [];
     let updatedContent = content;
-    const fileDir = dirname(filePath);
+    let hasChanges = false;
 
-    // Match import statements with various quote styles - simpler regex focusing on the path
-    const importRegex = /from\s+['"`]([^'"`]+)['"`]/g;
-    let match;
+    // Process imports in reverse order to maintain line/column positions
+    for (let i = imports.length - 1; i >= 0; i--) {
+      const importStatement = imports[i];
+      
+      // Only process relative imports
+      if (!this.isRelativeImport(importStatement.importPath)) {
+        continue;
+      }
 
-    const replacements: Array<{ original: string; replacement: string }> = [];
+      // Resolve the import to an absolute path
+      const resolvedImportPath = this.resolveImportPath(filePath, importStatement.importPath);
+      
+      // Check if this resolved path maps to a new path
+      const newPath = pathMap.get(resolvedImportPath);
+      
+      if (newPath) {
+        
+        // Calculate the new relative import path
+        const newImportPath = this.calculateRelativeImportPath(filePath, newPath);
+        
+        // Replace the import path in the content
+        const lines = updatedContent.split('\n');
+        const lineIndex = importStatement.lineNumber - 1;
+        const line = lines[lineIndex];
+        
+        const newLine = line.substring(0, importStatement.startPos) + 
+                       newImportPath + 
+                       line.substring(importStatement.endPos);
+        
+        lines[lineIndex] = newLine;
+        updatedContent = lines.join('\n');
+        hasChanges = true;
 
-    while ((match = importRegex.exec(content)) !== null) {
-      const importPath = match[1];
-
-      // Only process relative imports (starting with ./ or ../)
-      if (importPath.startsWith('./') || importPath.startsWith('../')) {
-        // Resolve the full path of the imported file
-        const resolvedImportPath = this.resolveImportPath(fileDir, importPath);
-
-        // Check if this file was renamed
-        const newPath = renameMap.get(resolvedImportPath);
-
-        if (newPath) {
-          // Calculate the new relative import path
-          const newImportPath = this.getRelativeImportPath(fileDir, newPath);
-
-          // Store the replacement to avoid regex issues with multiple replacements
-          replacements.push({
-            original: match[0],
-            replacement: match[0].replace(importPath, newImportPath)
-          });
-        }
+        changes.push({
+          filePath,
+          line: importStatement.lineNumber,
+          oldContent: line,
+          newContent: newLine,
+          reason: 'Updated import statements for renamed files'
+        });
       }
     }
 
-    // Apply all replacements
-    for (const { original, replacement } of replacements) {
-      updatedContent = updatedContent.replace(original, replacement);
+    return {
+      hasChanges,
+      content: updatedContent,
+      changes
+    };
+  }
+
+  /**
+   * Parses all import statements from file content
+   */
+  private parseImports(content: string): ParsedImport[] {
+    const imports: ParsedImport[] = [];
+    const lines = content.split('\n');
+
+    for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+      const line = lines[lineIndex];
+      const lineNumber = lineIndex + 1;
+
+      // Match import statements with various quote styles
+      const importRegex = /from\s+(['"`])([^'"`]+)\1/g;
+      let match;
+
+      while ((match = importRegex.exec(line)) !== null) {
+        const fullStatement = match[0];
+        const importPath = match[2];
+        const startPos = match.index + match[0].indexOf(match[1]) + 1; // Position after opening quote
+        const endPos = startPos + importPath.length;
+
+        imports.push({
+          fullStatement,
+          importPath,
+          lineNumber,
+          startPos,
+          endPos
+        });
+      }
     }
 
-    return updatedContent;
+    return imports;
+  }
+
+  /**
+   * Checks if an import path is relative (starts with ./ or ../)
+   */
+  private isRelativeImport(importPath: string): boolean {
+    return importPath.startsWith('./') || importPath.startsWith('../');
   }
 
   /**
    * Resolves a relative import path to an absolute path
    */
-  private resolveImportPath(fromDir: string, importPath: string): string {
-    // Handle relative imports
-    const resolvedPath = join(fromDir, importPath);
+  private resolveImportPath(fromFilePath: string, importPath: string): string {
+    const fromDir = dirname(fromFilePath);
+    const resolvedPath = resolve(fromDir, importPath);
 
-    // Always try adding .ts extension first (most common case)
-    const possiblePaths = [resolvedPath + '.ts', resolvedPath + '.js', resolvedPath];
-
-    for (const path of possiblePaths) {
-      if (existsSync(path)) {
-        return path;
-      }
+    // If the import already has an extension, use it as-is
+    if (importPath.endsWith('.ts') || importPath.endsWith('.js')) {
+      return this.removeExtension(resolvedPath);
     }
 
-    // Default to .ts if file doesn't exist yet (might be renamed)
-    return resolvedPath + '.ts';
+    // For renamed files, we can't rely on file existence since the original files don't exist
+    // We need to construct the path by assuming .ts extension for TypeScript files
+    // This is important because we're mapping OLD paths to NEW paths
+    return this.removeExtension(resolvedPath + '.ts');
   }
 
   /**
-   * Gets the relative import path from one directory to a file
+   * Calculates the relative import path from one file to another
    */
-  private getRelativeImportPath(fromDir: string, toPath: string): string {
-    const toDir = dirname(toPath);
-    const toFileName = basename(toPath, extname(toPath));
-
-    if (fromDir === toDir) {
-      // Same directory
-      return `./${toFileName}`;
+  private calculateRelativeImportPath(fromFilePath: string, toFilePath: string): string {
+    const fromDir = dirname(fromFilePath);
+    const toFileWithoutExt = this.removeExtension(toFilePath);
+    
+    let relativePath = relative(fromDir, toFileWithoutExt);
+    
+    // Normalize path separators to forward slashes (TypeScript/ES modules standard)
+    relativePath = relativePath.replace(/\\/g, '/');
+    
+    // Ensure relative path starts with ./ if it doesn't start with ../
+    if (!relativePath.startsWith('../') && !relativePath.startsWith('./')) {
+      relativePath = './' + relativePath;
     }
 
-    // Use Node.js relative path calculation
-    const relativePath = relative(fromDir, toPath);
-    const relativePathWithoutExt = relativePath.replace(/\.(ts|js)$/, '');
-
-    // Ensure it starts with ./ if it's not already relative
-    if (!relativePathWithoutExt.startsWith('.')) {
-      return `./${relativePathWithoutExt}`;
-    }
-
-    return relativePathWithoutExt.replace(/\\/g, '/'); // Normalize path separators
+    return relativePath;
   }
 
   /**
-   * Finds all TypeScript files in the directory
+   * Removes file extension from a path
    */
-  private findAllTypeScriptFiles(rootDir: string): string[] {
-    const files: string[] = [];
-
-    function walkDir(dir: string) {
-      const entries = readdirSync(dir, { withFileTypes: true });
-
-      for (const entry of entries) {
-        const fullPath = join(dir, entry.name);
-
-        if (entry.isDirectory()) {
-          // Skip common directories that shouldn't contain imports
-          if (!['node_modules', 'dist', '.git'].includes(entry.name)) {
-            walkDir(fullPath);
-          }
-        } else if (entry.isFile() && entry.name.endsWith('.ts')) {
-          files.push(fullPath);
-        }
-      }
-    }
-
-    walkDir(rootDir);
-    return files;
-  }
-
-  /**
-   * Compares old and new content to generate detailed change information
-   */
-  private getContentChanges(filePath: string, oldContent: string, newContent: string, reason: string): ContentChange[] {
-    const changes: ContentChange[] = [];
-    const oldLines = oldContent.split('\n');
-    const newLines = newContent.split('\n');
-
-    // Simple line-by-line comparison
-    const maxLines = Math.max(oldLines.length, newLines.length);
-    for (let i = 0; i < maxLines; i++) {
-      const oldLine = oldLines[i] || '';
-      const newLine = newLines[i] || '';
-
-      if (oldLine !== newLine) {
-        changes.push({
-          filePath,
-          line: i + 1,
-          oldContent: oldLine,
-          newContent: newLine,
-          reason
-        });
-      }
-    }
-
-    return changes;
+  private removeExtension(filePath: string): string {
+    const ext = extname(filePath);
+    return ext ? filePath.slice(0, -ext.length) : filePath;
   }
 }
