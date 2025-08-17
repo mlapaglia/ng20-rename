@@ -240,8 +240,6 @@ describe('FileNamingRule', () => {
       expect(result.additionalRenames).toHaveLength(1);
       expect(result.additionalRenames![0].oldPath).toBe('/test/user.ts'.replace(/\//g, path.sep));
       expect(result.additionalRenames![0].newPath).toBe('/test/user-model.ts'.replace(/\//g, path.sep));
-      expect(result.additionalRenames![0].reason).toContain('Resolved naming conflict');
-      expect(result.additionalRenames![0].reason).toContain('detected domain: model');
     });
 
     it('should resolve conflicts for service files with smart domain detection', async () => {

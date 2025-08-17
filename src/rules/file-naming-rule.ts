@@ -60,9 +60,7 @@ export class FileNamingRule extends RenameRule {
         const result: RuleResult = {
           newFileName: newPath,
           reason: `File name should follow Angular 20 conventions: ${currentFileName} -> ${expectedFileName}`,
-          additionalRenames: [
-            conflictResolution.conflictingFileRename as { oldPath: string; newPath: string; reason: string }
-          ]
+          additionalRenames: conflictResolution.conflictingFileRename ? [conflictResolution.conflictingFileRename] : []
         };
 
         // For components, also rename associated files (HTML, CSS, LESS, SCSS, spec)
@@ -238,22 +236,16 @@ export class FileNamingRule extends RenameRule {
   ): Array<{
     oldPath: string;
     newPath: string;
-    reason: string;
   }> {
     const fileDir = dirname(componentPath);
     const baseName = this.removeClassTypeSuffix(className, fileType);
     const newKebabName = this.toKebabCase(baseName);
-    const renames: Array<{ oldPath: string; newPath: string; reason: string }> = [];
+    const renames: Array<{ oldPath: string; newPath: string }> = [];
 
     // Define the associated file extensions to check (excluding spec files - handled separately)
-    const associatedExtensions = [
-      { ext: '.html', desc: 'HTML template' },
-      { ext: '.css', desc: 'CSS stylesheet' },
-      { ext: '.scss', desc: 'SCSS stylesheet' },
-      { ext: '.less', desc: 'LESS stylesheet' }
-    ];
+    const associatedExtensions = [{ ext: '.html' }, { ext: '.css' }, { ext: '.scss' }, { ext: '.less' }];
 
-    for (const { ext, desc } of associatedExtensions) {
+    for (const { ext } of associatedExtensions) {
       // Look for files with the old naming pattern
       const oldAssociatedPath = join(fileDir, `${currentFileNameWithoutExt}${ext}`);
 
@@ -264,8 +256,7 @@ export class FileNamingRule extends RenameRule {
         if (!existsSync(newAssociatedPath) || newAssociatedPath === oldAssociatedPath) {
           renames.push({
             oldPath: oldAssociatedPath,
-            newPath: newAssociatedPath,
-            reason: `Associated ${desc} should follow Angular 20 conventions: ${basename(oldAssociatedPath)} -> ${basename(newAssociatedPath)}`
+            newPath: newAssociatedPath
           });
         }
         // Note: We silently skip conflicting associated files rather than warn for each one
@@ -288,7 +279,6 @@ export class FileNamingRule extends RenameRule {
     renames: Array<{
       oldPath: string;
       newPath: string;
-      reason: string;
     }>;
     contentChanges: Array<{
       filePath: string;
@@ -297,7 +287,7 @@ export class FileNamingRule extends RenameRule {
     }>;
   } {
     const fileDir = dirname(filePath);
-    const renames: Array<{ oldPath: string; newPath: string; reason: string }> = [];
+    const renames: Array<{ oldPath: string; newPath: string }> = [];
     const contentChanges: Array<{ filePath: string; newContent: string; reason: string }> = [];
 
     // Look for corresponding spec file
@@ -312,8 +302,7 @@ export class FileNamingRule extends RenameRule {
       if (!existsSync(newSpecPath) || newSpecPath === oldSpecPath) {
         renames.push({
           oldPath: oldSpecPath,
-          newPath: newSpecPath,
-          reason: `Associated spec file should follow Angular 20 conventions: ${basename(oldSpecPath)} -> ${basename(newSpecPath)}`
+          newPath: newSpecPath
         });
 
         // Update import statements in the spec file
@@ -361,7 +350,7 @@ export class FileNamingRule extends RenameRule {
    */
   private attemptConflictResolution(conflictingFilePath: string): {
     resolved: boolean;
-    conflictingFileRename?: { oldPath: string; newPath: string; reason: string };
+    conflictingFileRename?: { oldPath: string; newPath: string };
     reason?: string;
   } {
     // Only attempt to resolve conflicts with plain .ts files (OTHER type)
@@ -403,8 +392,7 @@ export class FileNamingRule extends RenameRule {
         resolved: true,
         conflictingFileRename: {
           oldPath: conflictingFilePath,
-          newPath: newConflictingFilePath,
-          reason: `Resolved naming conflict: ${basename(conflictingFilePath)} -> ${newConflictingFileName} (detected domain: ${detectedDomain.replace('-', '')})`
+          newPath: newConflictingFilePath
         }
       };
     } catch (error) {

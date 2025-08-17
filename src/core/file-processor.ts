@@ -55,8 +55,7 @@ export class FileProcessor {
         if (ruleResult.newFileName && ruleResult.newFileName !== file.path) {
           const renamedFile: RenamedFile = {
             oldPath: file.path,
-            newPath: ruleResult.newFileName,
-            reason: ruleResult.reason || 'File naming convention'
+            newPath: ruleResult.newFileName
           };
 
           if (!this.dryRun) {

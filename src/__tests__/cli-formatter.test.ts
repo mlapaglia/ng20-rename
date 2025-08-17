@@ -44,8 +44,7 @@ describe('CliFormatter', () => {
         renamedFiles: [
           {
             oldPath: '/test/old.ts',
-            newPath: '/test/new.ts',
-            reason: 'Test rename'
+            newPath: '/test/new.ts'
           }
         ],
         contentChanges: [
@@ -90,13 +89,11 @@ describe('CliFormatter', () => {
       const renamedFiles: RenamedFile[] = [
         {
           oldPath: '/test/old.component.ts',
-          newPath: '/test/old.ts',
-          reason: 'Angular 20 naming convention'
+          newPath: '/test/old.ts'
         },
         {
           oldPath: '/test/service.service.ts',
-          newPath: '/test/service.ts',
-          reason: 'Remove redundant suffix'
+          newPath: '/test/service.ts'
         }
       ];
 
@@ -270,9 +267,7 @@ describe('CliFormatter', () => {
       const renamedFiles: RenamedFile[] = [
         {
           oldPath: longPath,
-          newPath: longPath.replace('.component.ts', '.ts'),
-          reason:
-            'Very long reason that also exceeds normal length limits and should be wrapped properly in the table display'
+          newPath: longPath.replace('.component.ts', '.ts')
         }
       ];
 
@@ -286,8 +281,7 @@ describe('CliFormatter', () => {
       const renamedFiles: RenamedFile[] = [
         {
           oldPath: specialPath,
-          newPath: specialPath.replace('.component.ts', '.ts'),
-          reason: 'Handle special characters'
+          newPath: specialPath.replace('.component.ts', '.ts')
         }
       ];
 
