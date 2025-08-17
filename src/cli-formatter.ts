@@ -39,25 +39,28 @@ export class CliFormatter {
 
     this.printHeader('✏️  File Renames');
     
-    const table = new Table({
-      head: [chalk.green.bold('Old Path'), chalk.green.bold('New Path'), chalk.green.bold('Reason')],
-      colWidths: [40, 40, 50],
-      style: {
-        head: [],
-        border: ['green']
-      },
-      wordWrap: true
-    });
+    renamedFiles.forEach((rename, index) => {
+      if (index > 0) {
+        console.log(''); // Add spacing between entries
+      }
+      
+      // Create a card-style display for each rename
+      const table = new Table({
+        style: {
+          head: [],
+          border: ['green']
+        },
+        wordWrap: true
+      });
 
-    renamedFiles.forEach(rename => {
-      table.push([
-        chalk.gray(this.getRelativePath(rename.oldPath)),
-        chalk.white(this.getRelativePath(rename.newPath)),
-        chalk.cyan(rename.reason)
-      ]);
-    });
+      table.push(
+        [chalk.green.bold('Old Path:'), chalk.gray(this.getRelativePath(rename.oldPath))],
+        [chalk.green.bold('New Path:'), chalk.white(this.getRelativePath(rename.newPath))],
+        [chalk.green.bold('Reason:'), chalk.cyan(rename.reason)]
+      );
 
-    console.log(table.toString());
+      console.log(table.toString());
+    });
   }
 
   public printContentChanges(contentChanges: ContentChange[]): void {
