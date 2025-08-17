@@ -39,12 +39,15 @@ export class CliFormatter {
 
     this.printHeader('✏️  File Renames');
     
-    renamedFiles.forEach((rename, index) => {
+    // Group files by their base component/service name
+    const groupedFiles = this.groupRelatedFiles(renamedFiles);
+    
+    groupedFiles.forEach((group, index) => {
       if (index > 0) {
-        console.log(''); // Add spacing between entries
+        console.log(''); // Add spacing between groups
       }
       
-      // Create a card-style display for each rename
+      // Create a table for this group
       const table = new Table({
         style: {
           head: [],
@@ -53,14 +56,65 @@ export class CliFormatter {
         wordWrap: true
       });
 
-      table.push(
-        [chalk.green.bold('Old Path:'), chalk.gray(this.getRelativePath(rename.oldPath))],
-        [chalk.green.bold('New Path:'), chalk.white(this.getRelativePath(rename.newPath))],
-        [chalk.green.bold('Reason:'), chalk.cyan(rename.reason)]
-      );
+      // Add old files row
+      const oldFiles = group.map(file => this.colorCodeFile(this.getRelativePath(file.oldPath), 'old')).join('\n');
+      table.push([chalk.green.bold('Old Files:'), oldFiles]);
+
+      // Add new files row  
+      const newFiles = group.map(file => this.colorCodeFile(this.getRelativePath(file.newPath), 'new')).join('\n');
+      table.push([chalk.green.bold('New Files:'), newFiles]);
 
       console.log(table.toString());
     });
+  }
+
+  private groupRelatedFiles(renamedFiles: RenamedFile[]): RenamedFile[][] {
+    const groups: Map<string, RenamedFile[]> = new Map();
+    
+    renamedFiles.forEach(file => {
+      // Extract base name for grouping (remove file extensions and type suffixes)
+      const baseName = this.getBaseNameForGrouping(file.oldPath);
+      
+      if (!groups.has(baseName)) {
+        groups.set(baseName, []);
+      }
+      groups.get(baseName)!.push(file);
+    });
+    
+    return Array.from(groups.values());
+  }
+
+  private getBaseNameForGrouping(filePath: string): string {
+    const fileName = filePath.split('/').pop() || '';
+    // Remove extensions and common Angular suffixes to group related files
+    return fileName
+      .replace(/\.(component|service|directive|pipe|guard|resolver|interceptor|module)\.(ts|html|css|scss|less)$/, '')
+      .replace(/\.(ts|html|css|scss|less)$/, '')
+      .replace(/\.(spec|test)$/, '');
+  }
+
+  private colorCodeFile(filePath: string, type: 'old' | 'new'): string {
+    const extension = filePath.split('.').pop()?.toLowerCase();
+    
+    let colorFn = chalk.white;
+    switch (extension) {
+      case 'ts':
+        colorFn = chalk.cyan;
+        break;
+      case 'html':
+        colorFn = chalk.green;
+        break;
+      case 'css':
+      case 'scss':
+      case 'less':
+        colorFn = chalk.yellow;
+        break;
+      default:
+        colorFn = chalk.white;
+    }
+    
+    // Add dimming for old files to distinguish them while keeping the same color
+    return type === 'old' ? colorFn.dim(filePath) : colorFn(filePath);
   }
 
   public printContentChanges(contentChanges: ContentChange[]): void {

@@ -53,7 +53,8 @@ describe('Conflict Resolution Integration Tests', () => {
 
     expect(componentRename).toBeDefined();
     expect(conflictRename).toBeDefined();
-    expect(conflictRename?.reason).toContain('Resolved naming conflict');
+    expect(conflictRename?.oldPath).toContain('user.ts');
+    expect(conflictRename?.newPath).toContain('user-model.ts');
   });
 
   it('should resolve conflict by renaming auth.ts to auth-config.ts', async () => {
@@ -90,7 +91,8 @@ describe('Conflict Resolution Integration Tests', () => {
 
     expect(serviceRename).toBeDefined();
     expect(conflictRename).toBeDefined();
-    expect(conflictRename?.reason).toContain('Resolved naming conflict');
+    expect(conflictRename?.oldPath).toContain('auth.ts');
+    expect(conflictRename?.newPath).toContain('auth-config.ts');
   });
 
   it('should handle smart service detection without conflicts', async () => {

@@ -31,8 +31,6 @@ export interface RenamedFile {
   oldPath: string;
   /** New file path */
   newPath: string;
-  /** Reason for the rename */
-  reason: string;
 }
 
 export interface ContentChange {

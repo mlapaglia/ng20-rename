@@ -39,9 +39,7 @@ describe('ImportUpdater', () => {
       const renamedFiles: RenamedFile[] = [
         {
           oldPath: path.join(tempDir, 'nonexistent.ts'),
-          newPath: path.join(tempDir, 'renamed.ts'),
-          reason: 'Test rename'
-        }
+          newPath: path.join(tempDir, 'renamed.ts')        }
       ];
 
       // Create the renamed file so the import can be resolved
@@ -62,9 +60,7 @@ describe('ImportUpdater', () => {
       const renamedFiles: RenamedFile[] = [
         {
           oldPath: path.join(tempDir, 'source.ts'),
-          newPath: path.join(tempDir, 'renamed.ts'),
-          reason: 'Test rename'
-        }
+          newPath: path.join(tempDir, 'renamed.ts')        }
       ];
 
       // Create the renamed file
@@ -112,9 +108,7 @@ describe('ImportUpdater', () => {
       const renamedFiles: RenamedFile[] = [
         {
           oldPath: path.join(tempDir, 'source.ts'),
-          newPath: path.join(tempDir, 'renamed.ts'),
-          reason: 'Test rename'
-        }
+          newPath: path.join(tempDir, 'renamed.ts')        }
       ];
 
       await importUpdater.updateImports(tempDir, renamedFiles, result);
@@ -146,9 +140,7 @@ describe('ImportUpdater', () => {
       const renamedFiles: RenamedFile[] = [
         {
           oldPath: serviceFile,
-          newPath: renamedServiceFile,
-          reason: 'Smart domain detection'
-        }
+          newPath: renamedServiceFile        }
       ];
 
       await importUpdater.updateImports(tempDir, renamedFiles, result);
@@ -172,9 +164,7 @@ describe('ImportUpdater', () => {
       const renamedFiles: RenamedFile[] = [
         {
           oldPath: sourceFile,
-          newPath: renamedFile,
-          reason: 'Test rename'
-        }
+          newPath: renamedFile        }
       ];
 
       await importUpdater.updateImports(tempDir, renamedFiles, result);
@@ -197,9 +187,7 @@ describe('ImportUpdater', () => {
       const renamedFiles: RenamedFile[] = [
         {
           oldPath: sourceFile,
-          newPath: renamedFile,
-          reason: 'Test rename'
-        }
+          newPath: renamedFile        }
       ];
 
       await importUpdater.updateImports(tempDir, renamedFiles, result);
@@ -222,9 +210,7 @@ describe('ImportUpdater', () => {
       const renamedFiles: RenamedFile[] = [
         {
           oldPath: sourceFile,
-          newPath: renamedFile,
-          reason: 'Test rename'
-        }
+          newPath: renamedFile        }
       ];
 
       await importUpdater.updateImports(tempDir, renamedFiles, result);
@@ -247,9 +233,7 @@ describe('ImportUpdater', () => {
       const renamedFiles: RenamedFile[] = [
         {
           oldPath: sourceFile,
-          newPath: renamedFile,
-          reason: 'Test rename'
-        }
+          newPath: renamedFile        }
       ];
 
       await importUpdater.updateImports(tempDir, renamedFiles, result);
@@ -274,9 +258,7 @@ describe('ImportUpdater', () => {
       const renamedFiles: RenamedFile[] = [
         {
           oldPath: sourceFile,
-          newPath: renamedFile,
-          reason: 'Test rename'
-        }
+          newPath: renamedFile        }
       ];
 
       await dryRunUpdater.updateImports(tempDir, renamedFiles, result);
@@ -297,9 +279,7 @@ describe('ImportUpdater', () => {
       const renamedFiles: RenamedFile[] = [
         {
           oldPath: path.join(tempDir, 'source.ts'),
-          newPath: path.join(tempDir, 'renamed.ts'),
-          reason: 'Test rename'
-        }
+          newPath: path.join(tempDir, 'renamed.ts')        }
       ];
 
       await importUpdater.updateImports(tempDir, renamedFiles, result);
@@ -326,9 +306,7 @@ describe('ImportUpdater', () => {
       const renamedFiles: RenamedFile[] = [
         {
           oldPath: sourceFile,
-          newPath: renamedFile,
-          reason: 'Test rename'
-        }
+          newPath: renamedFile        }
       ];
 
       await importUpdater.updateImports(tempDir, renamedFiles, result);

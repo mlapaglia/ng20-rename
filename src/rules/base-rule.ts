@@ -7,7 +7,6 @@ export interface RuleResult {
   additionalRenames?: Array<{
     oldPath: string;
     newPath: string;
-    reason: string;
   }>;
   /** Additional content changes for other files */
   additionalContentChanges?: Array<{

@@ -2,6 +2,7 @@ import { RenameRule } from '../rules/base-rule';
 import { FileNamingRule } from '../rules/file-naming-rule';
 import { ComponentNamingRule } from '../rules/component-naming-rule';
 import { DirectiveNamingRule } from '../rules/directive-naming-rule';
+import { RuleConfig } from '../config/rule-config';
 
 /**
  * Factory for creating and configuring rename rules
@@ -15,25 +16,20 @@ export class RuleFactory {
   }
 
   /**
-   * Creates a custom set of rules
+   * Creates a custom set of rules based on configuration
    */
-  static createCustomRules(options: {
-    fileNaming?: boolean;
-    componentNaming?: boolean;
-    directiveNaming?: boolean;
-    smartServices?: boolean;
-  }): RenameRule[] {
+  static createCustomRules(ruleConfig: RuleConfig): RenameRule[] {
     const rules: RenameRule[] = [];
 
-    if (options.fileNaming !== false) {
-      rules.push(new FileNamingRule(options.smartServices ?? true));
+    if (ruleConfig.isFileNamingEnabled()) {
+      rules.push(new FileNamingRule(ruleConfig.isSmartServicesEnabled()));
     }
 
-    if (options.componentNaming !== false) {
+    if (ruleConfig.isComponentNamingEnabled()) {
       rules.push(new ComponentNamingRule());
     }
 
-    if (options.directiveNaming !== false) {
+    if (ruleConfig.isDirectiveNamingEnabled()) {
       rules.push(new DirectiveNamingRule());
     }
 
