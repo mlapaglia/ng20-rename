@@ -9,6 +9,12 @@ export interface RuleResult {
     newPath: string;
     reason: string;
   }>;
+  /** Additional content changes for other files */
+  additionalContentChanges?: Array<{
+    filePath: string;
+    newContent: string;
+    reason: string;
+  }>;
   /** Files that require manual review due to conflicts */
   manualReviewRequired?: ManualReviewItem[];
   /** New file content if the content should be modified */

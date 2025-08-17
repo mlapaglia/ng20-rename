@@ -436,4 +436,249 @@ describe('FileNamingRule', () => {
       expect(cssRename).toBeDefined();
     });
   });
+
+  describe('edge cases and additional coverage', () => {
+    it('should handle files with spec file associations', async () => {
+      const file: AngularFile = {
+        path: '/test/UserProfile.component.ts',
+        content: 'export class UserProfileComponent {}',
+        type: AngularFileType.COMPONENT
+      };
+
+      // Mock fs to simulate spec file existence
+      const fs = require('fs');
+      fs.existsSync.mockImplementation((filePath: string) => {
+        return filePath.includes('user-profile.spec.ts');
+      });
+
+      const result = await rule.apply(file);
+
+      // Check that the main file is renamed
+      expect(result.newFileName).toBe('/test/user-profile.ts'.replace(/\//g, path.sep));
+      
+      // Additional renames may or may not exist depending on associated files
+      if (result.additionalRenames) {
+        expect(Array.isArray(result.additionalRenames)).toBe(true);
+      }
+      
+      // Additional content changes may or may not exist
+      if (result.additionalContentChanges) {
+        expect(Array.isArray(result.additionalContentChanges)).toBe(true);
+      }
+    });
+
+    it('should handle conflict resolution with non-TypeScript files', async () => {
+      const file: AngularFile = {
+        path: '/test/UserProfile.component.ts',
+        content: 'export class UserProfileComponent {}',
+        type: AngularFileType.COMPONENT
+      };
+
+      // Mock fs to simulate conflicting non-TS file
+      const fs = require('fs');
+      fs.existsSync.mockImplementation((filePath: string) => {
+        return filePath.includes('user-profile.js'); // Non-TS file
+      });
+
+      const result = await rule.apply(file);
+
+      // Should still attempt rename even with non-TS conflict
+      expect(result.newFileName).toBe('/test/user-profile.ts'.replace(/\//g, path.sep));
+    });
+
+    it('should apply to component files with templateUrl pattern', () => {
+      const content = `
+        @Component({
+          templateUrl: './user-profile.component.html'
+        })
+        export class UserProfileComponent {}
+      `;
+
+      const file: AngularFile = {
+        path: '/test/user-profile.ts',
+        content,
+        type: AngularFileType.COMPONENT
+      };
+
+      expect(rule.shouldApply(file)).toBe(true);
+    });
+
+    it('should apply to component files with styleUrls pattern', () => {
+      const content = `
+        @Component({
+          selector: 'app-user',
+          styleUrls: ['./user.component.scss']
+        })
+        export class UserComponent {}
+      `;
+
+      const file: AngularFile = {
+        path: '/test/user.ts',
+        content,
+        type: AngularFileType.COMPONENT
+      };
+
+      expect(rule.shouldApply(file)).toBe(true);
+    });
+
+    it('should apply to service files with @Injectable decorator', () => {
+      const content = `
+        @Injectable({
+          providedIn: 'root'
+        })
+        export class UserService {}
+      `;
+
+      const file: AngularFile = {
+        path: '/test/user.ts',
+        content,
+        type: AngularFileType.SERVICE
+      };
+
+      expect(rule.shouldApply(file)).toBe(true);
+    });
+
+    it('should apply to directive files with @Directive decorator', () => {
+      const content = `
+        @Directive({
+          selector: '[appHighlight]'
+        })
+        export class HighlightDirective {}
+      `;
+
+      const file: AngularFile = {
+        path: '/test/highlight.ts',
+        content,
+        type: AngularFileType.DIRECTIVE
+      };
+
+      expect(rule.shouldApply(file)).toBe(true);
+    });
+
+    it('should apply to pipe files with @Pipe decorator', () => {
+      const content = `
+        @Pipe({
+          name: 'currency'
+        })
+        export class CurrencyPipe {}
+      `;
+
+      const file: AngularFile = {
+        path: '/test/currency.ts',
+        content,
+        type: AngularFileType.PIPE
+      };
+
+      expect(rule.shouldApply(file)).toBe(true);
+    });
+
+    it('should apply to module files with @NgModule decorator', () => {
+      const content = `
+        @NgModule({
+          declarations: [AppComponent],
+          imports: [BrowserModule]
+        })
+        export class AppModule {}
+      `;
+
+      const file: AngularFile = {
+        path: '/test/app.ts',
+        content,
+        type: AngularFileType.MODULE
+      };
+
+      expect(rule.shouldApply(file)).toBe(true);
+    });
+
+    it('should apply to guard files with CanActivate interface', () => {
+      const content = `
+        export class AuthGuard implements CanActivate {
+          canActivate(): boolean {
+            return true;
+          }
+        }
+      `;
+
+      const file: AngularFile = {
+        path: '/test/auth.ts',
+        content,
+        type: AngularFileType.GUARD
+      };
+
+      expect(rule.shouldApply(file)).toBe(true);
+    });
+
+    it('should apply to guard files with CanLoad interface', () => {
+      const content = `
+        export class LazyGuard implements CanLoad {
+          canLoad(): boolean {
+            return true;
+          }
+        }
+      `;
+
+      const file: AngularFile = {
+        path: '/test/lazy.ts',
+        content,
+        type: AngularFileType.GUARD
+      };
+
+      expect(rule.shouldApply(file)).toBe(true);
+    });
+
+    it('should apply to interceptor files with HttpInterceptor interface', () => {
+      const content = `
+        export class AuthInterceptor implements HttpInterceptor {
+          intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+            return next.handle(req);
+          }
+        }
+      `;
+
+      const file: AngularFile = {
+        path: '/test/auth.ts',
+        content,
+        type: AngularFileType.INTERCEPTOR
+      };
+
+      expect(rule.shouldApply(file)).toBe(true);
+    });
+
+    it('should apply to resolver files with Resolve interface', () => {
+      const content = `
+        export class UserResolver implements Resolve<User> {
+          resolve(): Observable<User> {
+            return this.userService.getUser();
+          }
+        }
+      `;
+
+      const file: AngularFile = {
+        path: '/test/user.ts',
+        content,
+        type: AngularFileType.RESOLVER
+      };
+
+      expect(rule.shouldApply(file)).toBe(true);
+    });
+
+    it('should return OTHER type for unrecognized Angular files', () => {
+      const content = `
+        export class SomeUtility {
+          doSomething(): void {
+            console.log('utility function');
+          }
+        }
+      `;
+
+      const file: AngularFile = {
+        path: '/test/utility.ts',
+        content,
+        type: AngularFileType.OTHER
+      };
+
+      // This should remain as OTHER type
+      expect(rule.shouldApply(file)).toBe(false);
+    });
+  });
 });

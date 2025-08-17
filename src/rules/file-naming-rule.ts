@@ -67,8 +67,23 @@ export class FileNamingRule extends RenameRule {
 
         // For components, also rename associated files (HTML, CSS, LESS, SCSS, spec)
         if (file.type === AngularFileType.COMPONENT) {
-          const associatedRenames = this.getAssociatedFileRenames(file.path, fileNameWithoutExt, className);
+          const associatedRenames = this.getAssociatedFileRenames(file.path, fileNameWithoutExt, className, file.type);
           result.additionalRenames = (result.additionalRenames || []).concat(associatedRenames);
+        }
+
+        // For all file types, check for associated spec files
+        const specResult = this.getSpecFileRenames(
+          file.path,
+          fileNameWithoutExt,
+          className,
+          file.type,
+          expectedFileName
+        );
+        if (specResult.renames.length > 0) {
+          result.additionalRenames = (result.additionalRenames || []).concat(specResult.renames);
+        }
+        if (specResult.contentChanges.length > 0) {
+          result.additionalContentChanges = (result.additionalContentChanges || []).concat(specResult.contentChanges);
         }
 
         return result;
@@ -96,7 +111,16 @@ export class FileNamingRule extends RenameRule {
 
     // For components, also rename associated files (HTML, CSS, LESS, SCSS, spec)
     if (file.type === AngularFileType.COMPONENT) {
-      result.additionalRenames = this.getAssociatedFileRenames(file.path, fileNameWithoutExt, className);
+      result.additionalRenames = this.getAssociatedFileRenames(file.path, fileNameWithoutExt, className, file.type);
+    }
+
+    // For all file types, check for associated spec files
+    const specResult = this.getSpecFileRenames(file.path, fileNameWithoutExt, className, file.type, expectedFileName);
+    if (specResult.renames.length > 0) {
+      result.additionalRenames = (result.additionalRenames || []).concat(specResult.renames);
+    }
+    if (specResult.contentChanges.length > 0) {
+      result.additionalContentChanges = (result.additionalContentChanges || []).concat(specResult.contentChanges);
     }
 
     return result;
@@ -209,24 +233,24 @@ export class FileNamingRule extends RenameRule {
   private getAssociatedFileRenames(
     componentPath: string,
     currentFileNameWithoutExt: string,
-    className: string
+    className: string,
+    fileType: AngularFileType
   ): Array<{
     oldPath: string;
     newPath: string;
     reason: string;
   }> {
     const fileDir = dirname(componentPath);
-    const baseName = this.removeClassTypeSuffix(className, AngularFileType.COMPONENT);
+    const baseName = this.removeClassTypeSuffix(className, fileType);
     const newKebabName = this.toKebabCase(baseName);
     const renames: Array<{ oldPath: string; newPath: string; reason: string }> = [];
 
-    // Define the associated file extensions to check
+    // Define the associated file extensions to check (excluding spec files - handled separately)
     const associatedExtensions = [
       { ext: '.html', desc: 'HTML template' },
       { ext: '.css', desc: 'CSS stylesheet' },
       { ext: '.scss', desc: 'SCSS stylesheet' },
-      { ext: '.less', desc: 'LESS stylesheet' },
-      { ext: '.spec.ts', desc: 'spec file' }
+      { ext: '.less', desc: 'LESS stylesheet' }
     ];
 
     for (const { ext, desc } of associatedExtensions) {
@@ -249,6 +273,87 @@ export class FileNamingRule extends RenameRule {
     }
 
     return renames;
+  }
+
+  /**
+   * Gets spec file renames and content changes for any file type
+   */
+  private getSpecFileRenames(
+    filePath: string,
+    currentFileNameWithoutExt: string,
+    className: string,
+    fileType: AngularFileType,
+    expectedFileName: string
+  ): {
+    renames: Array<{
+      oldPath: string;
+      newPath: string;
+      reason: string;
+    }>;
+    contentChanges: Array<{
+      filePath: string;
+      newContent: string;
+      reason: string;
+    }>;
+  } {
+    const fileDir = dirname(filePath);
+    const renames: Array<{ oldPath: string; newPath: string; reason: string }> = [];
+    const contentChanges: Array<{ filePath: string; newContent: string; reason: string }> = [];
+
+    // Look for corresponding spec file
+    const oldSpecPath = join(fileDir, `${currentFileNameWithoutExt}.spec.ts`);
+
+    if (existsSync(oldSpecPath)) {
+      // Get the new base name from the expected file name (without extension)
+      const expectedFileNameWithoutExt = basename(expectedFileName, extname(expectedFileName));
+      const newSpecPath = join(fileDir, `${expectedFileNameWithoutExt}.spec.ts`);
+
+      // Check for conflicts before adding to rename list
+      if (!existsSync(newSpecPath) || newSpecPath === oldSpecPath) {
+        renames.push({
+          oldPath: oldSpecPath,
+          newPath: newSpecPath,
+          reason: `Associated spec file should follow Angular 20 conventions: ${basename(oldSpecPath)} -> ${basename(newSpecPath)}`
+        });
+
+        // Update import statements in the spec file
+        const specContent = readFileSync(oldSpecPath, 'utf-8');
+        const updatedSpecContent = this.updateSpecFileImports(
+          specContent,
+          currentFileNameWithoutExt,
+          expectedFileNameWithoutExt
+        );
+
+        if (updatedSpecContent !== specContent) {
+          contentChanges.push({
+            filePath: newSpecPath, // Use the new path since the file will be renamed
+            newContent: updatedSpecContent,
+            reason: 'Updated import statements to match renamed source file'
+          });
+        }
+      }
+    }
+
+    return { renames, contentChanges };
+  }
+
+  /**
+   * Updates import statements in spec files to match renamed source files
+   */
+  private updateSpecFileImports(specContent: string, oldFileName: string, newFileName: string): string {
+    let updatedContent = specContent;
+
+    // Update relative imports that reference the old file name
+    const importPatterns = [
+      new RegExp(`from\\s+['"\`]\\./${oldFileName}['"\`]`, 'g'),
+      new RegExp(`from\\s+['"\`]\\./${oldFileName}\\.ts['"\`]`, 'g')
+    ];
+
+    for (const pattern of importPatterns) {
+      updatedContent = updatedContent.replace(pattern, `from './${newFileName}'`);
+    }
+
+    return updatedContent;
   }
 
   /**
