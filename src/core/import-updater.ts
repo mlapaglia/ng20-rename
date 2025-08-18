@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, readdirSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, lstatSync } from 'fs';
 import { dirname, basename, join, extname, resolve } from 'path';
 import { RefactorResult, RenamedFile, ContentChange } from '../types';
 
@@ -270,6 +270,10 @@ export class ImportUpdater {
       { regex: /(import\s+[^'"`]*from\s+)(['"`])([^'"`]*[/\\])?([^'"`/\\]+)(['"`])/, prefix: 'import from' },
       // Direct imports: import 'path/filename'
       { regex: /(import\s+)(['"`])([^'"`]*[/\\])?([^'"`/\\]+)(['"`])/, prefix: 'import ' },
+      // Barrel exports: export { ... } from 'path/filename'
+      { regex: /(export\s+[^'"`]*from\s+)(['"`])([^'"`]*[/\\])?([^'"`/\\]+)(['"`])/, prefix: 'export from' },
+      // Re-exports: export * from 'path/filename'
+      { regex: /(export\s+\*\s+from\s+)(['"`])([^'"`]*[/\\])?([^'"`/\\]+)(['"`])/, prefix: 'export * from' },
       // templateUrl: 'path/filename'
       { regex: /(templateUrl:\s*)(['"`])([^'"`]*[/\\])?([^'"`/\\]+)(['"`])/, prefix: 'templateUrl: ' },
       // styleUrl: 'path/filename'
@@ -380,6 +384,15 @@ export class ImportUpdater {
       return null;
     }
 
+    // Check if this import path refers to an existing directory (barrel export)
+    // If it does, we should not update it when individual files within the directory are renamed
+    const currentDir = dirname(currentFilePath);
+    const resolvedImportPath = resolve(currentDir, fullImportPath);
+    if (this.fileSystem.exists(resolvedImportPath) && this.isDirectory(resolvedImportPath)) {
+      // This is a directory reference (barrel export), don't update it
+      return null;
+    }
+
     const candidates: Array<{
       mapping: [string, string];
       score: number;
@@ -452,5 +465,17 @@ export class ImportUpdater {
   private removeExtension(filePath: string): string {
     const ext = extname(filePath);
     return ext ? filePath.slice(0, -ext.length) : filePath;
+  }
+
+  /**
+   * Checks if a path is a directory
+   */
+  private isDirectory(path: string): boolean {
+    try {
+      const stats = lstatSync(path);
+      return stats.isDirectory();
+    } catch {
+      return false;
+    }
   }
 }
