@@ -365,6 +365,21 @@ export class ImportUpdater {
     pathMap: Map<string, string>,
     currentFilePath: string
   ): { newFileName: string } | null {
+    // Skip external library imports from node_modules
+    // These typically start with @scope/ or are bare module names without path separators
+    const fullImportPath = importMatch.pathPrefix + importMatch.fileName;
+
+    // Check if this is an external library import:
+    // 1. Starts with @scope/ (like @angular/core, @microsoft/signalr)
+    // 2. Is a bare module name without path separators (like 'rxjs', 'moment', 'lodash')
+    // 3. But NOT absolute paths that might be project-specific (like 'app/', 'src/')
+    if (
+      fullImportPath.startsWith('@') ||
+      (!fullImportPath.includes('/') && !fullImportPath.startsWith('.') && !fullImportPath.startsWith('/'))
+    ) {
+      return null;
+    }
+
     const candidates: Array<{
       mapping: [string, string];
       score: number;
