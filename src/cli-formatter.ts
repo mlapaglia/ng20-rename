@@ -98,10 +98,12 @@ export class CliFormatter {
   private getBaseNameForGrouping(filePath: string): string {
     const fileName = filePath.split('/').pop() || '';
     // Remove extensions and common Angular suffixes to group related files
+    // Handle spec files first to ensure they group with their components
     return fileName
+      .replace(/\.(component|service|directive|pipe|guard|resolver|interceptor|module)\.(spec|test)\.(ts)$/, '')
+      .replace(/\.(spec|test)\.(ts)$/, '')
       .replace(/\.(component|service|directive|pipe|guard|resolver|interceptor|module)\.(ts|html|css|scss|less)$/, '')
-      .replace(/\.(ts|html|css|scss|less)$/, '')
-      .replace(/\.(spec|test)$/, '');
+      .replace(/\.(ts|html|css|scss|less)$/, '');
   }
 
   private colorCodeFile(filePath: string, type: 'old' | 'new'): string {

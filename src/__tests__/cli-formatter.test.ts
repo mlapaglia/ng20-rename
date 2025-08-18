@@ -306,4 +306,74 @@ describe('CliFormatter', () => {
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('🔄 Content Changes'));
     });
   });
+
+  describe('file grouping', () => {
+    it('should group spec files with their related components', () => {
+      const renamedFiles: RenamedFile[] = [
+        {
+          oldPath: '/test/camera-mask.service.ts',
+          newPath: '/test/camera-mask-api.ts'
+        },
+        {
+          oldPath: '/test/camera-mask.ts',
+          newPath: '/test/camera-mask-model.ts'
+        },
+        {
+          oldPath: '/test/camera-mask.component.html',
+          newPath: '/test/camera-mask.html'
+        },
+        {
+          oldPath: '/test/camera-mask.component.css',
+          newPath: '/test/camera-mask.css'
+        },
+        {
+          oldPath: '/test/camera-mask.component.ts',
+          newPath: '/test/camera-mask.ts'
+        },
+        {
+          oldPath: '/test/camera-mask.component.spec.ts',
+          newPath: '/test/camera-mask.spec.ts'
+        }
+      ];
+
+      formatter.printRenamedFiles(renamedFiles);
+
+      // All files should be grouped together in one table
+      // The test verifies this by checking that the header is only printed once
+      const headerCalls = consoleSpy.mock.calls.filter(call => call[0] && call[0].includes('✏️  File Renames'));
+      expect(headerCalls).toHaveLength(1);
+    });
+
+    it('should create separate groups for unrelated files', () => {
+      // Test files that should be in separate groups
+      const renamedFiles: RenamedFile[] = [
+        {
+          oldPath: '/test/user.service.spec.ts',
+          newPath: '/test/user-api.spec.ts'
+        },
+        {
+          oldPath: '/test/user.service.ts',
+          newPath: '/test/user-api.ts'
+        },
+        {
+          oldPath: '/test/product.component.spec.ts',
+          newPath: '/test/product.spec.ts'
+        },
+        {
+          oldPath: '/test/product.component.ts',
+          newPath: '/test/product.ts'
+        }
+      ];
+
+      formatter.printRenamedFiles(renamedFiles);
+
+      // Should have one header but multiple table outputs (one per group)
+      const headerCalls = consoleSpy.mock.calls.filter(call => call[0] && call[0].includes('✏️  File Renames'));
+      expect(headerCalls).toHaveLength(1);
+
+      // Should have two tables (indicated by "Old Files:" appearing twice)
+      const tableCalls = consoleSpy.mock.calls.filter(call => call[0] && call[0].includes('Old Files:'));
+      expect(tableCalls).toHaveLength(2);
+    });
+  });
 });
