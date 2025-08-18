@@ -8,8 +8,8 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      id-token: write # Required for trusted publishing
+      contents: write
+      id-token: write
 
     steps:
       - name: Checkout code
@@ -72,6 +72,37 @@ jobs:
         run: npm publish --access public --provenance --tag ${{ steps.version.outputs.npm_tag }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Clean up pre-releases for stable releases
+        if: steps.version.outputs.npm_tag == 'latest'
+        run: |
+          echo "🧹 Cleaning up pre-release versions for stable release ${{ steps.version.outputs.version }}"
+          
+          BASE_VERSION=$(echo "${{ steps.version.outputs.version }}" | sed 's/-.*//')
+          echo "Base version: $BASE_VERSION"
+
+          echo "Fetching all releases..."
+          gh release list --json tagName,prerelease --limit 100 | jq -r '.[] | select(.prerelease == true and (.tagName | startswith("v'$BASE_VERSION'-"))) | .tagName' > prerelease_tags.txt
+          
+          if [ -s prerelease_tags.txt ]; then
+            echo "Found pre-release tags to clean up:"
+            cat prerelease_tags.txt
+
+            while IFS= read -r tag; do
+              if [ -n "$tag" ]; then
+                echo "Deleting pre-release: $tag"
+                gh release delete "$tag" --yes --cleanup-tag
+              fi
+            done < prerelease_tags.txt
+            
+            echo "✅ Cleaned up pre-release versions"
+          else
+            echo "ℹ️ No pre-release versions found for $BASE_VERSION"
+          fi
+          
+          rm -f prerelease_tags.txt
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Summary
         run: |
