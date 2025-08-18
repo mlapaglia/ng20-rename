@@ -273,7 +273,7 @@ export class ImportUpdater {
   }
 
   /**
-   * Parses all import statements from file content
+   * Parses all import statements and Angular component properties from file content
    */
   private parseImports(content: string): ParsedImport[] {
     const imports: ParsedImport[] = [];
@@ -283,7 +283,7 @@ export class ImportUpdater {
       const line = lines[lineIndex];
       const lineNumber = lineIndex + 1;
 
-      // Match import statements with various quote styles
+      // Match traditional import statements with various quote styles
       const importRegex = /from\s+(['"`])([^'"`]+)\1/g;
       let match;
 
@@ -300,6 +300,67 @@ export class ImportUpdater {
           startPos,
           endPos
         });
+      }
+
+      // Match Angular component properties: templateUrl, styleUrl, and styleUrls
+      // templateUrl: './component.html'
+      const templateUrlRegex = /templateUrl:\s*(['"`])([^'"`]+)\1/g;
+      while ((match = templateUrlRegex.exec(line)) !== null) {
+        const fullStatement = match[0];
+        const importPath = match[2];
+        const startPos = match.index + match[0].indexOf(match[1]) + 1; // Position after opening quote
+        const endPos = startPos + importPath.length;
+
+        imports.push({
+          fullStatement,
+          importPath,
+          lineNumber,
+          startPos,
+          endPos
+        });
+      }
+
+      // styleUrl: './component.css' (singular)
+      const styleUrlRegex = /styleUrl:\s*(['"`])([^'"`]+)\1/g;
+      while ((match = styleUrlRegex.exec(line)) !== null) {
+        const fullStatement = match[0];
+        const importPath = match[2];
+        const startPos = match.index + match[0].indexOf(match[1]) + 1; // Position after opening quote
+        const endPos = startPos + importPath.length;
+
+        imports.push({
+          fullStatement,
+          importPath,
+          lineNumber,
+          startPos,
+          endPos
+        });
+      }
+
+      // styleUrls: ['./component.css', './other.scss'] (plural, array)
+      const styleUrlsRegex = /styleUrls:\s*\[([^\]]+)\]/g;
+      while ((match = styleUrlsRegex.exec(line)) !== null) {
+        const arrayContent = match[1];
+
+        // Parse individual quoted paths within the array
+        const quotedPathRegex = /(['"`])([^'"`]+)\1/g;
+        let pathMatch;
+
+        while ((pathMatch = quotedPathRegex.exec(arrayContent)) !== null) {
+          const importPath = pathMatch[2];
+          // Calculate position relative to the start of the line
+          const arrayStartPos = match.index + match[0].indexOf('[') + 1;
+          const pathStartPos = arrayStartPos + pathMatch.index + 1; // Position after opening quote
+          const pathEndPos = pathStartPos + importPath.length;
+
+          imports.push({
+            fullStatement: pathMatch[0],
+            importPath,
+            lineNumber,
+            startPos: pathStartPos,
+            endPos: pathEndPos
+          });
+        }
       }
     }
 
@@ -370,7 +431,16 @@ export class ImportUpdater {
       const fromDir = dirname(fromFilePath);
       const resolvedPath = resolve(fromDir, importPath);
 
-      // If the import already has an extension, use it as-is
+      // Check if this is a non-TypeScript file (CSS, SCSS, LESS, HTML, etc.)
+      const nonTsExtensions = ['.css', '.scss', '.sass', '.less', '.html', '.htm'];
+      const hasNonTsExtension = nonTsExtensions.some(ext => importPath.endsWith(ext));
+
+      if (hasNonTsExtension) {
+        // For non-TypeScript files, keep the full path with extension for mapping
+        return resolvedPath;
+      }
+
+      // If the import already has a TypeScript extension, use it as-is
       if (importPath.endsWith('.ts') || importPath.endsWith('.js')) {
         return this.removeExtension(resolvedPath);
       }
@@ -440,15 +510,19 @@ export class ImportUpdater {
 
     // If we have the original import path, we need to preserve its extension style
     if (originalImportPath) {
+      // Check for non-TypeScript file extensions
+      const nonTsExtensions = ['.css', '.scss', '.sass', '.less', '.html', '.htm'];
+      const hasNonTsExtension = nonTsExtensions.some(ext => originalImportPath.endsWith(ext));
+
       // Check if the original import had an explicit .ts/.js extension
-      const hasExplicitExtension = originalImportPath.endsWith('.ts') || originalImportPath.endsWith('.js');
+      const hasExplicitTsExtension = originalImportPath.endsWith('.ts') || originalImportPath.endsWith('.js');
 
       let toFileForCalculation: string;
-      if (hasExplicitExtension) {
-        // Keep the extension for calculation
+      if (hasNonTsExtension || hasExplicitTsExtension) {
+        // For non-TypeScript files or explicit TypeScript extensions, keep the full path
         toFileForCalculation = toFilePath;
       } else {
-        // Remove the .ts extension but preserve other parts of the filename
+        // For TypeScript files without explicit extension, remove the extension
         toFileForCalculation = this.removeExtension(toFilePath);
       }
 
