@@ -23,10 +23,10 @@ describe('Import Statement Update Tests - Parent Directory Scanning', () => {
     //   main.ts (imports from ./app/app.component)
     //   app/
     //     app.component.ts
-    
+
     const srcDir = path.join(tempDir, 'src');
     const appDir = path.join(srcDir, 'app');
-    
+
     fs.mkdirSync(srcDir, { recursive: true });
     fs.mkdirSync(appDir, { recursive: true });
 
@@ -94,11 +94,11 @@ describe('Import Statement Update Tests - Parent Directory Scanning', () => {
     //     app.component.ts (imports from ./components/header.component)
     //     components/
     //       header.component.ts
-    
+
     const srcDir = path.join(tempDir, 'src');
     const appDir = path.join(srcDir, 'app');
     const componentsDir = path.join(appDir, 'components');
-    
+
     fs.mkdirSync(srcDir, { recursive: true });
     fs.mkdirSync(appDir, { recursive: true });
     fs.mkdirSync(componentsDir, { recursive: true });
@@ -175,7 +175,7 @@ describe('Import Statement Update Tests - Parent Directory Scanning', () => {
     // Verify that content changes were reported for both files
     const mainContentChanges = result.contentChanges.filter(c => c.filePath.includes('main.ts'));
     const appContentChanges = result.contentChanges.filter(c => c.filePath.includes('app.component.ts'));
-    
+
     expect(mainContentChanges.length).toBeGreaterThan(0);
     expect(appContentChanges.length).toBeGreaterThan(0);
   });

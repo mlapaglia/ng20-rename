@@ -123,8 +123,8 @@ export class ImportUpdater {
         const actualFilePath = this.getActualFilePath(filePath);
 
         if (!this.fileSystem.exists(actualFilePath)) {
-        continue;
-      }
+          continue;
+        }
 
         const content = this.fileSystem.readFile(actualFilePath);
         const updateResult = this.updateImportsInFile(content, actualFilePath, pathMap);
@@ -151,20 +151,21 @@ export class ImportUpdater {
    */
   private findSearchRoot(rootDir: string): string {
     let currentDir = rootDir;
-    
+
     // Walk up the directory tree looking for common Angular project indicators
-    while (currentDir !== dirname(currentDir)) { // Stop at filesystem root
+    while (currentDir !== dirname(currentDir)) {
+      // Stop at filesystem root
       const parentDir = dirname(currentDir);
-      
+
       // Check if we've reached a directory named 'src' - this is usually the Angular source root
       if (basename(currentDir) === 'src') {
         return currentDir;
       }
-      
+
       // Check if the parent contains typical Angular project files
       const packageJsonPath = join(parentDir, 'package.json');
       const angularJsonPath = join(parentDir, 'angular.json');
-      
+
       if (this.fileSystem.exists(packageJsonPath) || this.fileSystem.exists(angularJsonPath)) {
         // If we found project root files, search from the 'src' directory if it exists
         const srcDir = join(parentDir, 'src');
@@ -174,10 +175,10 @@ export class ImportUpdater {
         // Otherwise, search from the project root
         return parentDir;
       }
-      
+
       currentDir = parentDir;
     }
-    
+
     // If we couldn't find a better root, use the original rootDir
     return rootDir;
   }
@@ -238,7 +239,7 @@ export class ImportUpdater {
       // Check if this resolved path maps to a new path
       const newPath = pathMap.get(resolvedImportPath);
 
-        if (newPath) {
+      if (newPath) {
         // Calculate the new import path, preserving the original import style (relative vs absolute)
         const newImportPath = this.calculateNewImportPath(filePath, newPath, importStatement.importPath);
 
