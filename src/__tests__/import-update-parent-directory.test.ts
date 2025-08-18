@@ -107,8 +107,6 @@ describe('Import Statement Update Tests - Parent Directory Scanning', () => {
     const mainContent = `
       import { bootstrapApplication } from '@angular/platform-browser';
       import { HeaderComponent } from './app/components/header.component';
-
-      console.log('Using header:', HeaderComponent);
     `;
 
     // Create app.component.ts that also imports from components directory

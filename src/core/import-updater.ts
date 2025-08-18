@@ -216,52 +216,77 @@ export class ImportUpdater {
   }
 
   /**
-   * Updates imports in a single file content
+   * Updates imports in a single file content using raw string replacement
    */
   private updateImportsInFile(content: string, filePath: string, pathMap: Map<string, string>): ImportUpdateResult {
-    const imports = this.parseImports(content);
     const changes: ContentChange[] = [];
     let updatedContent = content;
     let hasChanges = false;
 
-    // Process imports in reverse order to maintain line/column positions
-    for (let i = imports.length - 1; i >= 0; i--) {
-      const importStatement = imports[i];
+    // Process each path mapping individually for more precise matching
+    for (const [oldPath, newPath] of pathMap) {
+      const oldFileName = basename(oldPath);
+      const newFileName = basename(newPath);
+      const oldFileNameNoExt = this.removeExtension(oldFileName);
+      const newFileNameNoExt = this.removeExtension(newFileName);
 
-      // Resolve the import to an absolute path (handles both relative and absolute imports)
-      const resolvedImportPath = this.resolveImportPath(filePath, importStatement.importPath);
+      // Try to match with and without extensions
+      const replacementPairs = [
+        { old: oldFileName, new: newFileName },
+        { old: oldFileNameNoExt, new: newFileNameNoExt }
+      ].filter(pair => pair.old !== pair.new);
 
-      // Skip if we couldn't resolve the import (e.g., external packages)
-      if (!resolvedImportPath) {
-        continue;
-      }
+      for (const { old: oldPattern, new: newPattern } of replacementPairs) {
+        const patterns = this.createImportPatterns(oldPattern);
 
-      // Check if this resolved path maps to a new path
-      const newPath = pathMap.get(resolvedImportPath);
+        for (const pattern of patterns) {
+          // Find all matches first, then replace from end to beginning to preserve indices
+          const regex = new RegExp(pattern.regex, 'g');
+          const matches = [];
+          let match;
 
-      if (newPath) {
-        // Calculate the new import path, preserving the original import style (relative vs absolute)
-        const newImportPath = this.calculateNewImportPath(filePath, newPath, importStatement.importPath);
+          while ((match = regex.exec(updatedContent)) !== null) {
+            matches.push({
+              match: match,
+              index: match.index,
+              fullMatch: match[0],
+              prefix: match[1],
+              openQuote: match[2],
+              pathPrefix: match[3] || '',
+              closeQuote: match[4]
+            });
+          }
 
-        // Replace the import path in the content
-        const lines = updatedContent.split('\n');
-        const lineIndex = importStatement.lineNumber - 1;
-        const line = lines[lineIndex];
+          // Process matches in reverse order to maintain correct indices
+          for (let i = matches.length - 1; i >= 0; i--) {
+            const matchInfo = matches[i];
 
-        const newLine =
-          line.substring(0, importStatement.startPos) + newImportPath + line.substring(importStatement.endPos);
+            // Build the new import statement by replacing just the filename part
+            const newImportStatement = `${matchInfo.prefix}${matchInfo.openQuote}${matchInfo.pathPrefix}${newPattern}${matchInfo.closeQuote}`;
 
-        lines[lineIndex] = newLine;
-        updatedContent = lines.join('\n');
-        hasChanges = true;
+            // Replace this specific occurrence
+            const beforeReplacement = updatedContent;
+            updatedContent =
+              updatedContent.substring(0, matchInfo.index) +
+              newImportStatement +
+              updatedContent.substring(matchInfo.index + matchInfo.fullMatch.length);
 
-        changes.push({
-          filePath,
-          line: importStatement.lineNumber,
-          oldContent: line,
-          newContent: newLine,
-          reason: 'Updated import statements for renamed files'
-        });
+            if (beforeReplacement !== updatedContent) {
+              hasChanges = true;
+
+              // Find which line this change was on for reporting (use original content for line calculation)
+              const lineNumber = beforeReplacement.substring(0, matchInfo.index).split('\n').length;
+
+              changes.push({
+                filePath,
+                line: lineNumber,
+                oldContent: matchInfo.fullMatch,
+                newContent: newImportStatement,
+                reason: 'Updated import statements for renamed files'
+              });
+            }
+          }
+        }
       }
     }
 
@@ -552,6 +577,44 @@ export class ImportUpdater {
     }
 
     return relativePath;
+  }
+
+  /**
+   * Creates regex patterns to match import statements with specific filenames
+   */
+  private createImportPatterns(oldFileName: string): Array<{ regex: string; prefix: string }> {
+    // Escape special regex characters in the filename
+    const escapedFileName = oldFileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    const patterns = [
+      // Traditional imports: from 'path/filename'
+      {
+        regex: `(from\\s+)(['"\`])([^'"\`]*[/\\\\])?${escapedFileName}(['"\`])`,
+        prefix: 'from '
+      },
+      // Direct imports: import 'path/filename'
+      {
+        regex: `(import\\s+)(['"\`])([^'"\`]*[/\\\\])?${escapedFileName}(['"\`])`,
+        prefix: 'import '
+      },
+      // templateUrl: 'path/filename'
+      {
+        regex: `(templateUrl:\\s*)(['"\`])([^'"\`]*[/\\\\])?${escapedFileName}(['"\`])`,
+        prefix: 'templateUrl: '
+      },
+      // styleUrl: 'path/filename'
+      {
+        regex: `(styleUrl:\\s*)(['"\`])([^'"\`]*[/\\\\])?${escapedFileName}(['"\`])`,
+        prefix: 'styleUrl: '
+      },
+      // styleUrls array: ['path/filename']
+      {
+        regex: `(styleUrls:\\s*\\[[^\\]]*?)(['"\`])([^'"\`]*[/\\\\])?${escapedFileName}(['"\`])`,
+        prefix: 'styleUrls: ['
+      }
+    ];
+
+    return patterns;
   }
 
   /**

@@ -249,7 +249,8 @@ describe('ImportUpdater', () => {
       expect(result.contentChanges).toHaveLength(1);
 
       const updatedContent = fs.readFileSync(importerFile, 'utf-8');
-      expect(updatedContent).toContain(`import { Source } from './renamed';`);
+      // New behavior: preserve the original format including .ts extension
+      expect(updatedContent).toContain(`import { Source } from './renamed.ts';`);
     });
 
     it('should handle dry run mode', async () => {
