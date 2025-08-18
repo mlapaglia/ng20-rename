@@ -273,9 +273,7 @@ export class ImportUpdater {
       // templateUrl: 'path/filename'
       { regex: /(templateUrl:\s*)(['"`])([^'"`]*[/\\])?([^'"`/\\]+)(['"`])/, prefix: 'templateUrl: ' },
       // styleUrl: 'path/filename'
-      { regex: /(styleUrl:\s*)(['"`])([^'"`]*[/\\])?([^'"`/\\]+)(['"`])/, prefix: 'styleUrl: ' },
-      // styleUrls array: ['path/filename']
-      { regex: /(styleUrls:\s*\[[^\]]*?)(['"`])([^'"`]*[/\\])?([^'"`/\\]+)(['"`])/, prefix: 'styleUrls: [' }
+      { regex: /(styleUrl:\s*)(['"`])([^'"`]*[/\\])?([^'"`/\\]+)(['"`])/, prefix: 'styleUrl: ' }
     ];
 
     for (const pattern of patterns) {
@@ -291,6 +289,31 @@ export class ImportUpdater {
           pathPrefix: match[3] || '',
           fileName: match[4],
           closeQuote: match[5]
+        });
+      }
+    }
+
+    // Handle styleUrls arrays with special two-stage approach
+    const styleUrlsRegex = /styleUrls:\s*\[([^\]]+)\]/g;
+    let styleUrlsMatch;
+
+    while ((styleUrlsMatch = styleUrlsRegex.exec(content)) !== null) {
+      const arrayContent = styleUrlsMatch[1];
+      const filePathRegex = /(['"`])([^'"`]*[/\\])?([^'"`/\\]+)(['"`])/g;
+      let fileMatch;
+
+      while ((fileMatch = filePathRegex.exec(arrayContent)) !== null) {
+        // Calculate the absolute position in the original content
+        const absoluteIndex = styleUrlsMatch.index + styleUrlsMatch[0].indexOf(fileMatch[0]);
+        
+        importMatches.push({
+          index: absoluteIndex,
+          fullMatch: fileMatch[0],
+          prefix: '', // We'll handle the prefix differently for styleUrls
+          openQuote: fileMatch[1],
+          pathPrefix: fileMatch[2] || '',
+          fileName: fileMatch[3],
+          closeQuote: fileMatch[4]
         });
       }
     }
