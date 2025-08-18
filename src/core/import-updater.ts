@@ -305,7 +305,7 @@ export class ImportUpdater {
       while ((fileMatch = filePathRegex.exec(arrayContent)) !== null) {
         // Calculate the absolute position in the original content
         const absoluteIndex = styleUrlsMatch.index + styleUrlsMatch[0].indexOf(fileMatch[0]);
-        
+
         importMatches.push({
           index: absoluteIndex,
           fullMatch: fileMatch[0],
