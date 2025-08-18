@@ -15,7 +15,13 @@ module.exports = {
     '^chalk$': '<rootDir>/src/__tests__/__mocks__/chalk.js',
     '^cli-table3$': '<rootDir>/src/__tests__/__mocks__/cli-table3.js'
   },
-  collectCoverageFrom: ['src/**/*.ts', '!src/**/*.test.ts', '!src/**/*.spec.ts', '!src/cli.ts', '!src/__tests__/fixtures/**/*', '!src/__tests__/__mocks__/**/*'],
+  collectCoverageFrom: [
+    'src/**/*.ts', 
+    '!src/**/*.test.ts', 
+    '!src/**/*.spec.ts', 
+    '!src/cli.ts', 
+    '!src/__tests__/**/*'  // Exclude all test utilities and fixtures
+  ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   coverageThreshold: {
