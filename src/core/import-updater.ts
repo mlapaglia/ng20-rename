@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync, existsSync, readdirSync } from 'fs';
-import { dirname, join, relative, extname, resolve } from 'path';
+import { dirname, basename, join, relative, extname, resolve } from 'path';
 import { RefactorResult, RenamedFile, ContentChange } from '../types';
 
 /**
@@ -110,8 +110,11 @@ export class ImportUpdater {
     // Create a mapping of old absolute paths to new absolute paths
     const pathMap = this.createPathMapping(renamedFiles);
 
+    // Find the appropriate search root to catch imports in parent directories
+    const searchRoot = this.findSearchRoot(rootDir);
+
     // Get all TypeScript files that might contain imports
-    const allTsFiles = this.fileSystem.getAllTsFiles(rootDir);
+    const allTsFiles = this.fileSystem.getAllTsFiles(searchRoot);
 
     // For each file, check and update imports
     for (const filePath of allTsFiles) {
@@ -120,8 +123,8 @@ export class ImportUpdater {
         const actualFilePath = this.getActualFilePath(filePath);
 
         if (!this.fileSystem.exists(actualFilePath)) {
-          continue;
-        }
+        continue;
+      }
 
         const content = this.fileSystem.readFile(actualFilePath);
         const updateResult = this.updateImportsInFile(content, actualFilePath, pathMap);
@@ -140,6 +143,43 @@ export class ImportUpdater {
         });
       }
     }
+  }
+
+  /**
+   * Finds the appropriate search root directory to scan for import statements.
+   * This ensures we catch imports in parent directories that might reference renamed files.
+   */
+  private findSearchRoot(rootDir: string): string {
+    let currentDir = rootDir;
+    
+    // Walk up the directory tree looking for common Angular project indicators
+    while (currentDir !== dirname(currentDir)) { // Stop at filesystem root
+      const parentDir = dirname(currentDir);
+      
+      // Check if we've reached a directory named 'src' - this is usually the Angular source root
+      if (basename(currentDir) === 'src') {
+        return currentDir;
+      }
+      
+      // Check if the parent contains typical Angular project files
+      const packageJsonPath = join(parentDir, 'package.json');
+      const angularJsonPath = join(parentDir, 'angular.json');
+      
+      if (this.fileSystem.exists(packageJsonPath) || this.fileSystem.exists(angularJsonPath)) {
+        // If we found project root files, search from the 'src' directory if it exists
+        const srcDir = join(parentDir, 'src');
+        if (this.fileSystem.exists(srcDir)) {
+          return srcDir;
+        }
+        // Otherwise, search from the project root
+        return parentDir;
+      }
+      
+      currentDir = parentDir;
+    }
+    
+    // If we couldn't find a better root, use the original rootDir
+    return rootDir;
   }
 
   /**
@@ -198,7 +238,7 @@ export class ImportUpdater {
       // Check if this resolved path maps to a new path
       const newPath = pathMap.get(resolvedImportPath);
 
-      if (newPath) {
+        if (newPath) {
         // Calculate the new import path, preserving the original import style (relative vs absolute)
         const newImportPath = this.calculateNewImportPath(filePath, newPath, importStatement.importPath);
 
