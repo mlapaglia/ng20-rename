@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync, existsSync, readdirSync } from 'fs';
-import { dirname, basename, join, relative, extname, resolve } from 'path';
+import { dirname, basename, join, extname, resolve } from 'path';
 import { RefactorResult, RenamedFile, ContentChange } from '../types';
 
 /**
