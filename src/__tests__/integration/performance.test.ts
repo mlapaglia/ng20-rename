@@ -1,6 +1,6 @@
 /**
  * Performance Benchmark Tests
- * 
+ *
  * Compares performance between virtual file system and real file system approaches.
  * Ensures the new testing architecture provides actual performance benefits.
  */
@@ -89,12 +89,10 @@ describe('Performance Benchmarks', () => {
 
     it('should handle naming convention application efficiently', async () => {
       const testCases = TestDataGenerators.generateNamingConventionTestCases();
-      
+
       const result = await PerformanceTestUtils.benchmark(
         () => {
-          return testCases.map(testCase => 
-            RenameTestUtils.applyNamingConventions(testCase.input)
-          );
+          return testCases.map(testCase => RenameTestUtils.applyNamingConventions(testCase.input));
         },
         1000,
         'Apply naming conventions to test cases'
@@ -108,7 +106,7 @@ describe('Performance Benchmarks', () => {
   describe('Memory Usage', () => {
     it('should have reasonable memory footprint for large projects', async () => {
       const initialMemory = process.memoryUsage().heapUsed;
-      
+
       // Create a large virtual project
       const largeProject = TestDataGenerators.generateAngularProject({
         components: Array.from({ length: 50 }, (_, i) => `component${i}`),
@@ -124,7 +122,7 @@ describe('Performance Benchmarks', () => {
       const memoryIncreaseMB = (afterCreationMemory - initialMemory) / 1024 / 1024;
 
       console.log(`📊 Memory usage for 100+ file project: ${memoryIncreaseMB.toFixed(2)}MB`);
-      
+
       // Should use reasonable amount of memory (less than 50MB for 100 files)
       expect(memoryIncreaseMB).toBeLessThan(50);
     });
@@ -141,16 +139,13 @@ describe('Performance Benchmarks', () => {
           services: Array.from({ length: fileCount / 2 }, (_, i) => `svc${i}`)
         });
 
-        const { timeMs } = await PerformanceTestUtils.measureTime(
-          () => {
-            const vfs = VirtualFileSystemFactory.createAngularProject();
-            for (const file of files) {
-              vfs.writeFile(file.path, file.content);
-            }
-            return vfs.getAllFiles();
-          },
-          `Process ${fileCount} files`
-        );
+        const { timeMs } = await PerformanceTestUtils.measureTime(() => {
+          const vfs = VirtualFileSystemFactory.createAngularProject();
+          for (const file of files) {
+            vfs.writeFile(file.path, file.content);
+          }
+          return vfs.getAllFiles();
+        }, `Process ${fileCount} files`);
 
         results.push({ fileCount, timeMs });
       }
@@ -162,7 +157,7 @@ describe('Performance Benchmarks', () => {
       const fileSizeRatio = lastResult.fileCount / firstResult.fileCount;
 
       console.log(`📈 Scaling factor: ${scalingFactor.toFixed(2)}x for ${fileSizeRatio}x files`);
-      
+
       // Should scale better than linearly (due to optimizations)
       expect(scalingFactor).toBeLessThan(fileSizeRatio * 1.5);
     });
@@ -172,7 +167,7 @@ describe('Performance Benchmarks', () => {
     it('should demonstrate speed improvement over file-based tests', async () => {
       // This test demonstrates the performance benefit of the new architecture
       // by comparing similar operations using virtual vs real file systems
-      
+
       const testFiles = [
         { path: 'src/user.component.ts', content: 'component content' },
         { path: 'src/user.service.ts', content: 'service content' },
@@ -182,12 +177,12 @@ describe('Performance Benchmarks', () => {
       // Virtual FS approach (new)
       const virtualTime = await PerformanceTestUtils.measureTime(async () => {
         const vfs = VirtualFileSystemFactory.createAngularProject();
-        
+
         // Create files
         for (const file of testFiles) {
           vfs.writeFile(file.path, file.content);
         }
-        
+
         // Simulate refactoring operations
         for (const file of testFiles) {
           const newPath = RenameTestUtils.applyNamingConventions(file.path);
@@ -197,7 +192,7 @@ describe('Performance Benchmarks', () => {
             vfs.deleteFile(file.path);
           }
         }
-        
+
         return vfs.getAllFiles();
       });
 
@@ -205,7 +200,7 @@ describe('Performance Benchmarks', () => {
       let tempDir: string;
       const realTime = await PerformanceTestUtils.measureTime(async () => {
         tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'legacy-test-'));
-        
+
         try {
           // Create files
           for (const file of testFiles) {
@@ -213,14 +208,14 @@ describe('Performance Benchmarks', () => {
             fs.mkdirSync(path.dirname(fullPath), { recursive: true });
             fs.writeFileSync(fullPath, file.content);
           }
-          
+
           // Simulate refactoring operations
           for (const file of testFiles) {
             const newPath = RenameTestUtils.applyNamingConventions(file.path);
             if (newPath !== file.path) {
               const oldFullPath = path.join(tempDir, file.path);
               const newFullPath = path.join(tempDir, newPath);
-              
+
               if (fs.existsSync(oldFullPath)) {
                 const content = fs.readFileSync(oldFullPath, 'utf-8');
                 fs.writeFileSync(newFullPath, content);
@@ -228,7 +223,7 @@ describe('Performance Benchmarks', () => {
               }
             }
           }
-          
+
           return fs.readdirSync(tempDir, { recursive: true });
         } finally {
           if (fs.existsSync(tempDir)) {

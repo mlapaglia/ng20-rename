@@ -13,13 +13,13 @@ export class FileNameGenerator {
   getExpectedFileName(className: string, fileType: AngularFileType, fileExt: string, fileContent?: string): string {
     // Remove class type suffix (e.g., "Component", "Service") from class name
     const baseClassName = this.removeClassTypeSuffix(className, fileType);
-    
+
     // Convert to kebab-case
     const kebabCaseName = this.toKebabCase(baseClassName);
-    
+
     // Get the appropriate file suffix for Angular 20
     const typeSuffix = this.getTypeSuffix(fileType, fileContent);
-    
+
     return `${kebabCaseName}${typeSuffix}${fileExt}`;
   }
 

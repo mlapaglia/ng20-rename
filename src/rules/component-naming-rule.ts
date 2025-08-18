@@ -174,8 +174,41 @@ export class ComponentNamingRule extends RenameRule {
 
     const baseName = className.replace(/Component$/, '');
     const kebabName = this.toKebabCase(baseName);
-    // Angular 20: No .component suffix in file names
+
+    // Parse the existing styleUrls to preserve original extensions
+    const styleMatch = content.match(/styleUrls?:\s*\[([^\]]+)\]/);
+    if (styleMatch) {
+      const currentStyles = styleMatch[1];
+      // Extract all quoted paths and preserve their extensions
+      const pathMatches = currentStyles.match(/['"`]([^'"`]+)['"`]/g);
+      if (pathMatches) {
+        const updatedPaths = pathMatches.map(quotedPath => {
+          const path = quotedPath.slice(1, -1); // Remove quotes
+          const extension = this.extractStyleExtension(path);
+          return `'./${kebabName}${extension}'`;
+        });
+        return updatedPaths.join(', ');
+      }
+    }
+
+    // Fallback to .css if no existing styleUrls found
     return `'./${kebabName}.css'`;
+  }
+
+  /**
+   * Extracts the style file extension from a path, preserving .less, .scss, .css, etc.
+   */
+  private extractStyleExtension(stylePath: string): string {
+    const supportedExtensions = ['.less', '.scss', '.sass', '.css'];
+
+    for (const ext of supportedExtensions) {
+      if (stylePath.endsWith(ext)) {
+        return ext;
+      }
+    }
+
+    // Default to .css if no recognized extension found
+    return '.css';
   }
 
   private isValidComponentSelector(selector: string): boolean {

@@ -1,6 +1,6 @@
 /**
  * Test Utilities for Angular Refactoring
- * 
+ *
  * Provides utilities for testing import statement parsing, file renaming,
  * and integration scenarios using the virtual file system.
  */
@@ -36,7 +36,7 @@ export class ImportTestUtils {
    */
   static parseImports(content: string): ImportStatement[] {
     const imports: ImportStatement[] = [];
-    
+
     // More comprehensive regex patterns for different import types
     const patterns = [
       // Named imports: import { A, B } from 'module'
@@ -54,22 +54,25 @@ export class ImportTestUtils {
       while ((match = pattern.exec(content)) !== null) {
         const fullStatement = match[0].trim();
         const isTypeImport = fullStatement.includes('import type');
-        
+
         let namedImports: string[] = [];
         let defaultImport: string | undefined;
         let modulePath: string = '';
-        
-        if (pattern === patterns[0]) { // Named imports
+
+        if (pattern === patterns[0]) {
+          // Named imports
           const namedImportsStr = match[1];
           modulePath = match[2];
           namedImports = namedImportsStr
             .split(',')
             .map(s => s.trim())
             .filter(s => s.length > 0 && !s.includes('//'));
-        } else if (pattern === patterns[1]) { // Default imports
+        } else if (pattern === patterns[1]) {
+          // Default imports
           defaultImport = match[1];
           modulePath = match[2];
-        } else if (pattern === patterns[2]) { // Mixed imports
+        } else if (pattern === patterns[2]) {
+          // Mixed imports
           defaultImport = match[1];
           const namedImportsStr = match[2];
           modulePath = match[3];
@@ -77,7 +80,8 @@ export class ImportTestUtils {
             .split(',')
             .map(s => s.trim())
             .filter(s => s.length > 0 && !s.includes('//'));
-        } else if (pattern === patterns[3]) { // Namespace imports
+        } else if (pattern === patterns[3]) {
+          // Namespace imports
           defaultImport = match[1];
           modulePath = match[2];
         }
@@ -85,16 +89,16 @@ export class ImportTestUtils {
         const isRelative = modulePath.startsWith('./') || modulePath.startsWith('../');
 
         // Avoid duplicates by checking if we already have this import
-        const existingImport = imports.find(imp => 
-          imp.modulePath === modulePath && imp.fullStatement === fullStatement
+        const existingImport = imports.find(
+          imp => imp.modulePath === modulePath && imp.fullStatement === fullStatement
         );
-        
+
         if (!existingImport) {
           imports.push({
             fullStatement,
             namedImports,
             defaultImport,
-            typeImport: isTypeImport ? (namedImports.join(', ') || defaultImport) : undefined,
+            typeImport: isTypeImport ? namedImports.join(', ') || defaultImport : undefined,
             modulePath,
             isRelative
           });
@@ -114,7 +118,7 @@ export class ImportTestUtils {
       `(import\\s+(?:type\\s+)?(?:[^'"]+\\s+from\\s+)?['"\`])${escapedOldPath}(['"\`])`,
       'g'
     );
-    
+
     return content.replace(importRegex, `$1${newPath}$2`);
   }
 
@@ -135,12 +139,7 @@ export class ImportTestUtils {
 
     for (const imp of imports) {
       const resolvedPath = this.resolveImportPath(fileDir, imp.modulePath);
-      const possiblePaths = [
-        `${resolvedPath}.ts`,
-        `${resolvedPath}.js`,
-        `${resolvedPath}/index.ts`,
-        resolvedPath
-      ];
+      const possiblePaths = [`${resolvedPath}.ts`, `${resolvedPath}.js`, `${resolvedPath}/index.ts`, resolvedPath];
 
       const exists = possiblePaths.some(path => vfs.exists(path));
       if (!exists) {
@@ -162,13 +161,9 @@ export class ImportTestUtils {
    */
   static normalizeImportPaths(content: string): string {
     // Replace backslashes with forward slashes in import paths
-    return content.replace(
-      /(from\s+['"`][^'"`]*['"`])/g,
-      (match) => match.replace(/\\/g, '/')
-    ).replace(
-      /(import\s+['"`][^'"`]*['"`])/g,
-      (match) => match.replace(/\\/g, '/')
-    );
+    return content
+      .replace(/(from\s+['"`][^'"`]*['"`])/g, match => match.replace(/\\/g, '/'))
+      .replace(/(import\s+['"`][^'"`]*['"`])/g, match => match.replace(/\\/g, '/'));
   }
 
   private static resolveImportPath(baseDir: string, importPath: string): string {
@@ -178,7 +173,7 @@ export class ImportTestUtils {
     if (importPath.startsWith('../')) {
       const parts = baseDir.split('/');
       const importParts = importPath.split('/');
-      
+
       let upLevels = 0;
       for (const part of importParts) {
         if (part === '..') {
@@ -190,10 +185,10 @@ export class ImportTestUtils {
 
       const remainingImportParts = importParts.slice(upLevels);
       const resolvedBaseParts = parts.slice(0, -upLevels);
-      
+
       return [...resolvedBaseParts, ...remainingImportParts].join('/');
     }
-    
+
     return importPath;
   }
 }
@@ -208,7 +203,7 @@ export class RenameTestUtils {
   static applyNamingConventions(filePath: string): string {
     const directory = this.getDirectoryPath(filePath);
     const extension = this.getFileExtension(filePath);
-    
+
     // For files without traditional extensions (.ts, .js, etc), treat the whole name as filename
     let fileName: string;
     if (extension === '' || !extension.match(/^\.(ts|js|html|css|scss|less)$/)) {
@@ -216,7 +211,7 @@ export class RenameTestUtils {
       fileName = lastSlash === -1 ? filePath : filePath.substring(lastSlash + 1);
       // For files without extensions, return just the processed name
       let newName = fileName;
-      
+
       // Handle spec files first (more specific patterns)
       if (fileName.includes('.component.spec')) {
         newName = fileName.replace('.component.spec', '.spec');
@@ -231,7 +226,7 @@ export class RenameTestUtils {
       else if (fileName.endsWith('.service')) {
         newName = fileName.replace('.service', '');
       }
-      
+
       return directory ? `${directory}/${newName}` : newName;
     } else {
       fileName = this.getFileName(filePath);
@@ -271,13 +266,11 @@ export class RenameTestUtils {
       const baseName = this.getFileNameWithoutExtension(newPath);
       const extension = this.getFileExtension(newPath);
       const directory = this.getDirectoryPath(newPath);
-      
+
       // Use the original filename to determine the appropriate suffix
       const suffix = this.generateConflictSuffix(oldPath, counter);
-      finalPath = directory 
-        ? `${directory}/${baseName}${suffix}${extension}`
-        : `${baseName}${suffix}${extension}`;
-      
+      finalPath = directory ? `${directory}/${baseName}${suffix}${extension}` : `${baseName}${suffix}${extension}`;
+
       counter++;
     }
 
@@ -304,7 +297,7 @@ export class RenameTestUtils {
     const lastDot = filePath.lastIndexOf('.');
     const lastSlash = filePath.lastIndexOf('/');
     // Make sure the dot is after the last slash (not in directory name)
-    return (lastDot === -1 || lastDot < lastSlash) ? '' : filePath.substring(lastDot);
+    return lastDot === -1 || lastDot < lastSlash ? '' : filePath.substring(lastDot);
   }
 
   private static generateConflictSuffix(originalPath: string, counter: number): string {
@@ -380,4 +373,3 @@ export class TestScenarioBuilder {
     return this.vfs.snapshot();
   }
 }
-

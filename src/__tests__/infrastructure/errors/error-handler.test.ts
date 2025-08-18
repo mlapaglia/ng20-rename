@@ -1,12 +1,10 @@
 import { ErrorHandler } from '../../../infrastructure/errors/error-handler';
-import { 
-  AppError, 
-  ErrorCategory, 
-  ConfigurationError, 
-  FileSystemError, 
-  ValidationError, 
-  ProcessingError, 
-  ConflictResolutionError 
+import {
+  ConfigurationError,
+  FileSystemError,
+  ValidationError,
+  ProcessingError,
+  ConflictResolutionError
 } from '../../../infrastructure/errors/error-types';
 
 describe('ErrorHandler', () => {

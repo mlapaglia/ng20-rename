@@ -4,11 +4,14 @@
 export abstract class AppError extends Error {
   abstract readonly code: string;
   abstract readonly category: ErrorCategory;
-  
-  constructor(message: string, public readonly context?: Record<string, any>) {
+
+  constructor(
+    message: string,
+    public readonly context?: Record<string, any>
+  ) {
     super(message);
     this.name = this.constructor.name;
-    
+
     // Maintains proper stack trace for where our error was thrown (only available on V8)
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, this.constructor);

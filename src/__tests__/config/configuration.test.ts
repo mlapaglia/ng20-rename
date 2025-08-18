@@ -152,7 +152,7 @@ describe('Configuration', () => {
     it('should get include patterns copy', () => {
       const patterns = config.getIncludePatterns();
       patterns.push('new-pattern');
-      
+
       // Original should be unchanged
       expect(config.getIncludePatterns()).not.toContain('new-pattern');
     });
@@ -160,7 +160,7 @@ describe('Configuration', () => {
     it('should get exclude patterns copy', () => {
       const patterns = config.getExcludePatterns();
       patterns.push('new-pattern');
-      
+
       // Original should be unchanged
       expect(config.getExcludePatterns()).not.toContain('new-pattern');
     });

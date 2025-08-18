@@ -25,9 +25,20 @@ export class CliFormatter {
 
     table.push(
       ['📁 Files processed', chalk.white(result.processedFiles.length.toString())],
-      ['✏️  Files renamed', result.renamedFiles.length > 0 ? chalk.green(result.renamedFiles.length.toString()) : chalk.gray('0')],
-      ['🔄 Content changes', result.contentChanges.length > 0 ? chalk.blue(result.contentChanges.length.toString()) : chalk.gray('0')],
-      ['⚠️  Manual review required', result.manualReviewRequired.length > 0 ? chalk.yellow(result.manualReviewRequired.length.toString()) : chalk.gray('0')],
+      [
+        '✏️  Files renamed',
+        result.renamedFiles.length > 0 ? chalk.green(result.renamedFiles.length.toString()) : chalk.gray('0')
+      ],
+      [
+        '🔄 Content changes',
+        result.contentChanges.length > 0 ? chalk.blue(result.contentChanges.length.toString()) : chalk.gray('0')
+      ],
+      [
+        '⚠️  Manual review required',
+        result.manualReviewRequired.length > 0
+          ? chalk.yellow(result.manualReviewRequired.length.toString())
+          : chalk.gray('0')
+      ],
       ['❌ Errors', result.errors.length > 0 ? chalk.red(result.errors.length.toString()) : chalk.gray('0')]
     );
 
@@ -38,15 +49,15 @@ export class CliFormatter {
     if (renamedFiles.length === 0) return;
 
     this.printHeader('✏️  File Renames');
-    
+
     // Group files by their base component/service name
     const groupedFiles = this.groupRelatedFiles(renamedFiles);
-    
+
     groupedFiles.forEach((group, index) => {
       if (index > 0) {
         console.log(''); // Add spacing between groups
       }
-      
+
       // Create a table for this group
       const table = new Table({
         style: {
@@ -60,7 +71,7 @@ export class CliFormatter {
       const oldFiles = group.map(file => this.colorCodeFile(this.getRelativePath(file.oldPath), 'old')).join('\n');
       table.push([chalk.green.bold('Old Files:'), oldFiles]);
 
-      // Add new files row  
+      // Add new files row
       const newFiles = group.map(file => this.colorCodeFile(this.getRelativePath(file.newPath), 'new')).join('\n');
       table.push([chalk.green.bold('New Files:'), newFiles]);
 
@@ -70,32 +81,34 @@ export class CliFormatter {
 
   private groupRelatedFiles(renamedFiles: RenamedFile[]): RenamedFile[][] {
     const groups: Map<string, RenamedFile[]> = new Map();
-    
+
     renamedFiles.forEach(file => {
       // Extract base name for grouping (remove file extensions and type suffixes)
       const baseName = this.getBaseNameForGrouping(file.oldPath);
-      
+
       if (!groups.has(baseName)) {
         groups.set(baseName, []);
       }
       groups.get(baseName)!.push(file);
     });
-    
+
     return Array.from(groups.values());
   }
 
   private getBaseNameForGrouping(filePath: string): string {
     const fileName = filePath.split('/').pop() || '';
     // Remove extensions and common Angular suffixes to group related files
+    // Handle spec files first to ensure they group with their components
     return fileName
+      .replace(/\.(component|service|directive|pipe|guard|resolver|interceptor|module)\.(spec|test)\.(ts)$/, '')
+      .replace(/\.(spec|test)\.(ts)$/, '')
       .replace(/\.(component|service|directive|pipe|guard|resolver|interceptor|module)\.(ts|html|css|scss|less)$/, '')
-      .replace(/\.(ts|html|css|scss|less)$/, '')
-      .replace(/\.(spec|test)$/, '');
+      .replace(/\.(ts|html|css|scss|less)$/, '');
   }
 
   private colorCodeFile(filePath: string, type: 'old' | 'new'): string {
     const extension = filePath.split('.').pop()?.toLowerCase();
-    
+
     let colorFn = chalk.white;
     switch (extension) {
       case 'ts':
@@ -112,7 +125,7 @@ export class CliFormatter {
       default:
         colorFn = chalk.white;
     }
-    
+
     // Add dimming for old files to distinguish them while keeping the same color
     return type === 'old' ? colorFn.dim(filePath) : colorFn(filePath);
   }
@@ -135,7 +148,7 @@ export class CliFormatter {
 
     Object.entries(changesByFile).forEach(([filePath, changes]) => {
       console.log(chalk.blue.bold(`\n📄 ${this.getRelativePath(filePath)}`));
-      
+
       const table = new Table({
         head: [chalk.blue.bold('Line'), chalk.blue.bold('Change'), chalk.blue.bold('Reason')],
         colWidths: [8, 60, 40],
@@ -155,11 +168,7 @@ export class CliFormatter {
           changeText += chalk.green(`+ ${change.newContent.trim()}`);
         }
 
-        table.push([
-          chalk.yellow(change.line.toString()),
-          changeText,
-          chalk.cyan(change.reason)
-        ]);
+        table.push([chalk.yellow(change.line.toString()), changeText, chalk.cyan(change.reason)]);
       });
 
       console.log(table.toString());
@@ -170,9 +179,14 @@ export class CliFormatter {
     if (manualReviewItems.length === 0) return;
 
     this.printHeader('⚠️  Manual Review Required');
-    
+
     const table = new Table({
-      head: [chalk.yellow.bold('File'), chalk.yellow.bold('Desired Path'), chalk.yellow.bold('Issue'), chalk.yellow.bold('Type')],
+      head: [
+        chalk.yellow.bold('File'),
+        chalk.yellow.bold('Desired Path'),
+        chalk.yellow.bold('Issue'),
+        chalk.yellow.bold('Type')
+      ],
       colWidths: [35, 35, 40, 20],
       style: {
         head: [],
@@ -197,7 +211,7 @@ export class CliFormatter {
     if (errors.length === 0) return;
 
     this.printHeader('❌ Errors');
-    
+
     const table = new Table({
       head: [chalk.red.bold('File'), chalk.red.bold('Line'), chalk.red.bold('Error Message')],
       colWidths: [40, 8, 60],
@@ -219,15 +233,10 @@ export class CliFormatter {
     console.log(table.toString());
   }
 
-  public printVerboseInfo(options: {
-    rootDir: string;
-    dryRun: boolean;
-    include: string[];
-    exclude: string[];
-  }): void {
+  public printVerboseInfo(options: { rootDir: string; dryRun: boolean; include: string[]; exclude: string[] }): void {
     console.log(chalk.cyan.bold('\n⚙️  Configuration'));
     console.log(chalk.cyan('═'.repeat(15)));
-    
+
     const table = new Table({
       head: [chalk.cyan.bold('Setting'), chalk.cyan.bold('Value')],
       colWidths: [20, 60],
@@ -271,7 +280,11 @@ export class CliFormatter {
     } else if (hasChanges) {
       this.printSuccess('Refactoring completed successfully! 🎉');
     } else {
-      console.log(chalk.blue.bold('\n✨ No changes needed - your Angular project is already following the latest naming conventions!'));
+      console.log(
+        chalk.blue.bold(
+          '\n✨ No changes needed - your Angular project is already following the latest naming conventions!'
+        )
+      );
     }
   }
 }

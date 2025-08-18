@@ -30,7 +30,7 @@ describe('ImportUpdater', () => {
   describe('updateImports', () => {
     it('should return early when no files are renamed', async () => {
       await importUpdater.updateImports(tempDir, [], result);
-      
+
       expect(result.contentChanges).toHaveLength(0);
       expect(result.errors).toHaveLength(0);
     });
@@ -39,7 +39,8 @@ describe('ImportUpdater', () => {
       const renamedFiles: RenamedFile[] = [
         {
           oldPath: path.join(tempDir, 'nonexistent.ts'),
-          newPath: path.join(tempDir, 'renamed.ts')        }
+          newPath: path.join(tempDir, 'renamed.ts')
+        }
       ];
 
       // Create the renamed file so the import can be resolved
@@ -60,7 +61,8 @@ describe('ImportUpdater', () => {
       const renamedFiles: RenamedFile[] = [
         {
           oldPath: path.join(tempDir, 'source.ts'),
-          newPath: path.join(tempDir, 'renamed.ts')        }
+          newPath: path.join(tempDir, 'renamed.ts')
+        }
       ];
 
       // Create the renamed file
@@ -69,7 +71,7 @@ describe('ImportUpdater', () => {
       // Create a file that imports from the source
       const importerFile = path.join(tempDir, 'importer.ts');
       fs.writeFileSync(importerFile, `import { Test } from './source';`);
-      
+
       // Mock the updateImportsInFile method to throw an error
       const originalMethod = (importUpdater as any).updateImportsInFile.bind(importUpdater);
       jest.spyOn(importUpdater as any, 'updateImportsInFile').mockImplementation((...args: any[]) => {
@@ -95,11 +97,11 @@ describe('ImportUpdater', () => {
       const nodeModulesDir = path.join(tempDir, 'node_modules');
       const distDir = path.join(tempDir, 'dist');
       const gitDir = path.join(tempDir, '.git');
-      
+
       fs.mkdirSync(nodeModulesDir);
       fs.mkdirSync(distDir);
       fs.mkdirSync(gitDir);
-      
+
       // Create TypeScript files in these directories
       fs.writeFileSync(path.join(nodeModulesDir, 'test.ts'), 'export class Test {}');
       fs.writeFileSync(path.join(distDir, 'test.ts'), 'export class Test {}');
@@ -108,7 +110,8 @@ describe('ImportUpdater', () => {
       const renamedFiles: RenamedFile[] = [
         {
           oldPath: path.join(tempDir, 'source.ts'),
-          newPath: path.join(tempDir, 'renamed.ts')        }
+          newPath: path.join(tempDir, 'renamed.ts')
+        }
       ];
 
       await importUpdater.updateImports(tempDir, renamedFiles, result);
@@ -123,7 +126,7 @@ describe('ImportUpdater', () => {
       const srcDir = path.join(tempDir, 'src');
       const componentsDir = path.join(srcDir, 'components');
       const servicesDir = path.join(srcDir, 'services');
-      
+
       fs.mkdirSync(srcDir);
       fs.mkdirSync(componentsDir);
       fs.mkdirSync(servicesDir);
@@ -140,14 +143,15 @@ describe('ImportUpdater', () => {
       const renamedFiles: RenamedFile[] = [
         {
           oldPath: serviceFile,
-          newPath: renamedServiceFile        }
+          newPath: renamedServiceFile
+        }
       ];
 
       await importUpdater.updateImports(tempDir, renamedFiles, result);
 
       expect(result.contentChanges).toHaveLength(1);
       expect(result.contentChanges[0].filePath).toBe(componentFile);
-      
+
       const updatedContent = fs.readFileSync(componentFile, 'utf-8');
       expect(updatedContent).toContain(`import { UserService } from '../services/user-api';`);
     });
@@ -164,13 +168,14 @@ describe('ImportUpdater', () => {
       const renamedFiles: RenamedFile[] = [
         {
           oldPath: sourceFile,
-          newPath: renamedFile        }
+          newPath: renamedFile
+        }
       ];
 
       await importUpdater.updateImports(tempDir, renamedFiles, result);
 
       expect(result.contentChanges).toHaveLength(1);
-      
+
       const updatedContent = fs.readFileSync(importerFile, 'utf-8');
       expect(updatedContent).toContain(`import { Source } from './renamed';`);
     });
@@ -187,7 +192,8 @@ describe('ImportUpdater', () => {
       const renamedFiles: RenamedFile[] = [
         {
           oldPath: sourceFile,
-          newPath: renamedFile        }
+          newPath: renamedFile
+        }
       ];
 
       await importUpdater.updateImports(tempDir, renamedFiles, result);
@@ -210,13 +216,14 @@ describe('ImportUpdater', () => {
       const renamedFiles: RenamedFile[] = [
         {
           oldPath: sourceFile,
-          newPath: renamedFile        }
+          newPath: renamedFile
+        }
       ];
 
       await importUpdater.updateImports(tempDir, renamedFiles, result);
 
       expect(result.contentChanges).toHaveLength(1);
-      
+
       const updatedContent = fs.readFileSync(importerFile, 'utf-8');
       expect(updatedContent).toContain(`import { Source } from './renamed';`);
     });
@@ -233,20 +240,22 @@ describe('ImportUpdater', () => {
       const renamedFiles: RenamedFile[] = [
         {
           oldPath: sourceFile,
-          newPath: renamedFile        }
+          newPath: renamedFile
+        }
       ];
 
       await importUpdater.updateImports(tempDir, renamedFiles, result);
 
       expect(result.contentChanges).toHaveLength(1);
-      
+
       const updatedContent = fs.readFileSync(importerFile, 'utf-8');
-      expect(updatedContent).toContain(`import { Source } from './renamed';`);
+      // New behavior: preserve the original format including .ts extension
+      expect(updatedContent).toContain(`import { Source } from './renamed.ts';`);
     });
 
     it('should handle dry run mode', async () => {
       const dryRunUpdater = new ImportUpdater(true);
-      
+
       const sourceFile = path.join(tempDir, 'source.ts');
       const renamedFile = path.join(tempDir, 'renamed.ts');
       const importerFile = path.join(tempDir, 'importer.ts');
@@ -258,13 +267,14 @@ describe('ImportUpdater', () => {
       const renamedFiles: RenamedFile[] = [
         {
           oldPath: sourceFile,
-          newPath: renamedFile        }
+          newPath: renamedFile
+        }
       ];
 
       await dryRunUpdater.updateImports(tempDir, renamedFiles, result);
 
       expect(result.contentChanges).toHaveLength(1);
-      
+
       // File should not be actually modified in dry run
       const actualContent = fs.readFileSync(importerFile, 'utf-8');
       expect(actualContent).toContain(`import { Source } from './source';`);
@@ -279,7 +289,8 @@ describe('ImportUpdater', () => {
       const renamedFiles: RenamedFile[] = [
         {
           oldPath: path.join(tempDir, 'source.ts'),
-          newPath: path.join(tempDir, 'renamed.ts')        }
+          newPath: path.join(tempDir, 'renamed.ts')
+        }
       ];
 
       await importUpdater.updateImports(tempDir, renamedFiles, result);
@@ -295,7 +306,7 @@ describe('ImportUpdater', () => {
 
       fs.writeFileSync(sourceFile, 'export class Source {}');
       fs.writeFileSync(renamedFile, 'export class Source {}');
-      
+
       const importerContent = `
         import { Source } from './source';
         import type { Source as SourceType } from "./source";
@@ -306,13 +317,14 @@ describe('ImportUpdater', () => {
       const renamedFiles: RenamedFile[] = [
         {
           oldPath: sourceFile,
-          newPath: renamedFile        }
+          newPath: renamedFile
+        }
       ];
 
       await importUpdater.updateImports(tempDir, renamedFiles, result);
 
       expect(result.contentChanges).toHaveLength(3); // One change per import line
-      
+
       const updatedContent = fs.readFileSync(importerFile, 'utf-8');
       expect(updatedContent).toContain(`from './renamed'`);
       expect(updatedContent).toContain(`from "./renamed"`);

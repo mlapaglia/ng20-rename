@@ -1,32 +1,31 @@
 /**
  * Path Normalization Tests - Virtual File System
- * 
+ *
  * Tests that import paths always use forward slashes, even when the underlying
  * OS file system uses backslashes (Windows). This is important because import
  * statements in JavaScript/TypeScript must always use forward slashes per the
  * ES module specification.
  */
 
-import { 
-  VirtualFileSystem 
-} from '../../testing/virtual-file-system';
-import { 
-  ImportTestUtils, 
-  RenameTestUtils, 
-  TestScenarioBuilder 
-} from '../../testing/test-utilities';
+import { VirtualFileSystem } from '../../testing/virtual-file-system';
+import { ImportTestUtils, RenameTestUtils, TestScenarioBuilder } from '../../testing/test-utilities';
 
 describe('Path Normalization - Import Slash Handling', () => {
   describe('Import Path Consistency', () => {
     it('should maintain forward slashes in import paths when working with subdirectories', () => {
       const scenario = new TestScenarioBuilder()
-        .addFile('src/plate/plate.ts', `
+        .addFile(
+          'src/plate/plate.ts',
+          `
           export interface Plate {
             id: number;
             name: string;
           }
-        `)
-        .addFile('src/plate.service.ts', `
+        `
+        )
+        .addFile(
+          'src/plate.service.ts',
+          `
           import { Injectable } from '@angular/core';
           import type { Plate } from './plate/plate';
 
@@ -36,10 +35,11 @@ describe('Path Normalization - Import Slash Handling', () => {
               return { id: 1, name: 'Test Plate' };
             }
           }
-        `);
+        `
+        );
 
       const vfs = scenario.getVirtualFileSystem();
-      
+
       // Simulate the refactoring process
       simulateRefactoring(vfs);
 
@@ -49,11 +49,12 @@ describe('Path Normalization - Import Slash Handling', () => {
 
       // Check that import statements maintain forward slashes
       const updatedServiceContent = vfs.readFile('src/plate.ts');
-      
+
       // Extract import lines that reference subdirectories
-      const importLines = updatedServiceContent.split('\n')
+      const importLines = updatedServiceContent
+        .split('\n')
         .filter(line => line.includes('import') && line.includes('./plate'));
-      
+
       for (const line of importLines) {
         // Should NOT contain backslashes in import paths
         expect(line).not.toMatch(/import.*['"`]\.\/plate\\plate/);
@@ -64,7 +65,9 @@ describe('Path Normalization - Import Slash Handling', () => {
 
     it('should handle cross-directory imports with forward slashes', () => {
       const scenario = new TestScenarioBuilder()
-        .addFile('src/features/auth/auth.service.ts', `
+        .addFile(
+          'src/features/auth/auth.service.ts',
+          `
           import { Injectable } from '@angular/core';
           
           @Injectable({ providedIn: 'root' })
@@ -73,8 +76,11 @@ describe('Path Normalization - Import Slash Handling', () => {
               return true;
             }
           }
-        `)
-        .addFile('src/login.component.ts', `
+        `
+        )
+        .addFile(
+          'src/login.component.ts',
+          `
           import { Component } from '@angular/core';
           import { AuthService } from './features/auth/auth.service';
           
@@ -85,10 +91,11 @@ describe('Path Normalization - Import Slash Handling', () => {
           export class LoginComponent {
             constructor(private authService: AuthService) {}
           }
-        `);
+        `
+        );
 
       const vfs = scenario.getVirtualFileSystem();
-      
+
       // Simulate the refactoring process
       simulateRefactoring(vfs);
 
@@ -98,9 +105,10 @@ describe('Path Normalization - Import Slash Handling', () => {
 
       // Check that nested path imports maintain forward slashes
       const updatedLoginContent = vfs.readFile('src/login.ts');
-      const importLines = updatedLoginContent.split('\n')
+      const importLines = updatedLoginContent
+        .split('\n')
         .filter(line => line.includes('import') && line.includes('./features/auth/'));
-      
+
       for (const line of importLines) {
         // Should NOT contain backslashes
         expect(line).not.toMatch(/import.*['"`]\.\/features\\auth/);
@@ -163,18 +171,20 @@ describe('Path Normalization - Import Slash Handling', () => {
       const updatedComponentContent = vfs.readFile('src/components/user-profile.ts');
 
       // Check spec file imports
-      const specImportLines = updatedSpecContent.split('\n')
+      const specImportLines = updatedSpecContent
+        .split('\n')
         .filter(line => line.includes('import') && line.includes('./'));
-      
+
       for (const line of specImportLines) {
         expect(line).not.toMatch(/import.*['"`]\.\\user-profile/);
         expect(line).toMatch(/import.*['"`]\.\/user-profile/);
       }
 
       // Check component imports to utils
-      const componentImportLines = updatedComponentContent.split('\n')
+      const componentImportLines = updatedComponentContent
+        .split('\n')
         .filter(line => line.includes('import') && line.includes('../utils/'));
-      
+
       for (const line of componentImportLines) {
         expect(line).not.toMatch(/import.*['"`]\.\.\\utils\\util/);
         expect(line).toMatch(/import.*['"`]\.\.\/utils\/util/);
@@ -205,7 +215,7 @@ describe('MixedComponent', () => {
       // Should normalize all paths to use forward slashes
       expect(updatedContent).toContain('./some/path/mixed');
       expect(updatedContent).not.toContain('./some/path\\mixed');
-      
+
       expect(updatedContent).toContain('./another/path/service.service');
       expect(updatedContent).not.toContain('./another\\path/service.service');
     });
@@ -229,7 +239,7 @@ describe('CorrectComponent', () => {
       // Should maintain forward slashes and update filename
       expect(updatedContent).toContain('./components/correct');
       expect(updatedContent).toContain('./services/good.service');
-      
+
       // Verify no backslashes were introduced
       expect(updatedContent).not.toContain('\\');
     });
@@ -244,7 +254,7 @@ describe('CorrectComponent', () => {
       const newPath = RenameTestUtils.applyNamingConventions(filePath);
       if (newPath !== filePath) {
         const finalPath = RenameTestUtils.simulateRename(vfs, filePath, newPath);
-        
+
         // Perform the rename in the virtual file system
         const content = vfs.readFile(filePath);
         vfs.writeFile(finalPath, content);
@@ -258,14 +268,14 @@ describe('CorrectComponent', () => {
 
   function updateImportsForRenamedFile(vfs: VirtualFileSystem, oldPath: string, newPath: string): void {
     const allFiles = vfs.getAllFiles();
-    
+
     for (const filePath of allFiles) {
       const content = vfs.readFile(filePath);
       const imports = ImportTestUtils.findRelativeImports(content);
-      
+
       for (const imp of imports) {
         const resolvedPath = resolveImportPath(filePath, imp.modulePath);
-        
+
         // Check if this import points to the renamed file
         if (pathsMatch(resolvedPath, oldPath)) {
           const newImportPath = calculateNewImportPath(filePath, newPath);
@@ -280,26 +290,26 @@ describe('CorrectComponent', () => {
   function resolveImportPath(fromFile: string, importPath: string): string {
     // Simplified path resolution
     const fromDir = fromFile.substring(0, fromFile.lastIndexOf('/'));
-    
+
     if (importPath.startsWith('./')) {
       return `${fromDir}/${importPath.substring(2)}.ts`;
     }
     if (importPath.startsWith('../')) {
       const parts = fromDir.split('/');
       const importParts = importPath.split('/');
-      
+
       let upLevels = 0;
       for (const part of importParts) {
         if (part === '..') upLevels++;
         else break;
       }
-      
+
       const resolvedParts = parts.slice(0, -upLevels);
       const remainingImportParts = importParts.slice(upLevels);
-      
+
       return `${resolvedParts.join('/')}/${remainingImportParts.join('/')}.ts`;
     }
-    
+
     return importPath;
   }
 
@@ -314,25 +324,27 @@ describe('CorrectComponent', () => {
     const fromParts = fromFile.split('/').slice(0, -1); // Remove filename
     const toParts = toFile.split('/').slice(0, -1); // Remove filename
     const toFileName = toFile.split('/').pop()?.replace(/\.ts$/, '') || '';
-    
+
     // Find common prefix
     let commonLength = 0;
-    while (commonLength < fromParts.length && 
-           commonLength < toParts.length && 
-           fromParts[commonLength] === toParts[commonLength]) {
+    while (
+      commonLength < fromParts.length &&
+      commonLength < toParts.length &&
+      fromParts[commonLength] === toParts[commonLength]
+    ) {
       commonLength++;
     }
-    
+
     // Calculate relative path
     const upLevels = fromParts.length - commonLength;
     const downPath = toParts.slice(commonLength);
-    
+
     const relativeParts = Array(upLevels).fill('..').concat(downPath);
-    
+
     if (relativeParts.length === 0) {
       return `./${toFileName}`;
     }
-    
+
     // Always use forward slashes in import paths
     return `${relativeParts.join('/')}/${toFileName}`;
   }
