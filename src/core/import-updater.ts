@@ -200,76 +200,47 @@ export class ImportUpdater {
   }
 
   /**
-   * Updates imports in a single file content using raw string replacement
+   * Updates imports in a single file content using intelligent mapping
    */
   private updateImportsInFile(content: string, filePath: string, pathMap: Map<string, string>): ImportUpdateResult {
     const changes: ContentChange[] = [];
     let updatedContent = content;
     let hasChanges = false;
 
-    // Process each path mapping individually for more precise matching
-    for (const [oldPath, newPath] of pathMap) {
-      const oldFileName = basename(oldPath);
-      const newFileName = basename(newPath);
-      const oldFileNameNoExt = this.removeExtension(oldFileName);
-      const newFileNameNoExt = this.removeExtension(newFileName);
+    // First, find all import statements in the file
+    const importMatches = this.findAllImportStatements(content);
 
-      // Try to match with and without extensions
-      const replacementPairs = [
-        { old: oldFileName, new: newFileName },
-        { old: oldFileNameNoExt, new: newFileNameNoExt }
-      ].filter(pair => pair.old !== pair.new);
+    // Remove any overlapping matches to prevent corruption
+    const uniqueMatches = this.removeOverlappingMatches(importMatches);
 
-      for (const { old: oldPattern, new: newPattern } of replacementPairs) {
-        const patterns = this.createImportPatterns(oldPattern);
+    // Process each import statement and find the best mapping
+    for (let i = uniqueMatches.length - 1; i >= 0; i--) {
+      const importMatch = uniqueMatches[i];
+      const bestMapping = this.findBestMapping(importMatch, pathMap, filePath);
 
-        for (const pattern of patterns) {
-          // Find all matches first, then replace from end to beginning to preserve indices
-          const regex = new RegExp(pattern.regex, 'g');
-          const matches = [];
-          let match;
+      if (bestMapping) {
+        const newImportStatement = `${importMatch.prefix}${importMatch.openQuote}${importMatch.pathPrefix}${bestMapping.newFileName}${importMatch.closeQuote}`;
 
-          while ((match = regex.exec(updatedContent)) !== null) {
-            matches.push({
-              match: match,
-              index: match.index,
-              fullMatch: match[0],
-              prefix: match[1],
-              openQuote: match[2],
-              pathPrefix: match[3] || '',
-              closeQuote: match[4]
-            });
-          }
+        // Replace this specific occurrence
+        const beforeReplacement = updatedContent;
+        updatedContent =
+          updatedContent.substring(0, importMatch.index) +
+          newImportStatement +
+          updatedContent.substring(importMatch.index + importMatch.fullMatch.length);
 
-          // Process matches in reverse order to maintain correct indices
-          for (let i = matches.length - 1; i >= 0; i--) {
-            const matchInfo = matches[i];
+        if (beforeReplacement !== updatedContent) {
+          hasChanges = true;
 
-            // Build the new import statement by replacing just the filename part
-            const newImportStatement = `${matchInfo.prefix}${matchInfo.openQuote}${matchInfo.pathPrefix}${newPattern}${matchInfo.closeQuote}`;
+          // Find which line this change was on for reporting (use original content for line calculation)
+          const lineNumber = beforeReplacement.substring(0, importMatch.index).split('\n').length;
 
-            // Replace this specific occurrence
-            const beforeReplacement = updatedContent;
-            updatedContent =
-              updatedContent.substring(0, matchInfo.index) +
-              newImportStatement +
-              updatedContent.substring(matchInfo.index + matchInfo.fullMatch.length);
-
-            if (beforeReplacement !== updatedContent) {
-              hasChanges = true;
-
-              // Find which line this change was on for reporting (use original content for line calculation)
-              const lineNumber = beforeReplacement.substring(0, matchInfo.index).split('\n').length;
-
-              changes.push({
-                filePath,
-                line: lineNumber,
-                oldContent: matchInfo.fullMatch,
-                newContent: newImportStatement,
-                reason: 'Updated import statements for renamed files'
-              });
-            }
-          }
+          changes.push({
+            filePath,
+            line: lineNumber,
+            oldContent: importMatch.fullMatch,
+            newContent: newImportStatement,
+            reason: 'Updated import statements for renamed files'
+          });
         }
       }
     }
@@ -282,41 +253,159 @@ export class ImportUpdater {
   }
 
   /**
-   * Creates regex patterns to match import statements with specific filenames
+   * Finds all import statements in the content
    */
-  private createImportPatterns(oldFileName: string): Array<{ regex: string; prefix: string }> {
-    // Escape special regex characters in the filename
-    const escapedFileName = oldFileName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
+  private findAllImportStatements(content: string): Array<{
+    index: number;
+    fullMatch: string;
+    prefix: string;
+    openQuote: string;
+    pathPrefix: string;
+    fileName: string;
+    closeQuote: string;
+  }> {
+    const importMatches = [];
     const patterns = [
-      // Traditional imports: from 'path/filename'
-      {
-        regex: `(from\\s+)(['"\`])([^'"\`]*[/\\\\])?${escapedFileName}(['"\`])`,
-        prefix: 'from '
-      },
+      // Traditional imports: import { ... } from 'path/filename'
+      { regex: /(import\s+[^'"`]*from\s+)(['"`])([^'"`]*[/\\])?([^'"`/\\]+)(['"`])/, prefix: 'import from' },
       // Direct imports: import 'path/filename'
-      {
-        regex: `(import\\s+)(['"\`])([^'"\`]*[/\\\\])?${escapedFileName}(['"\`])`,
-        prefix: 'import '
-      },
+      { regex: /(import\s+)(['"`])([^'"`]*[/\\])?([^'"`/\\]+)(['"`])/, prefix: 'import ' },
       // templateUrl: 'path/filename'
-      {
-        regex: `(templateUrl:\\s*)(['"\`])([^'"\`]*[/\\\\])?${escapedFileName}(['"\`])`,
-        prefix: 'templateUrl: '
-      },
+      { regex: /(templateUrl:\s*)(['"`])([^'"`]*[/\\])?([^'"`/\\]+)(['"`])/, prefix: 'templateUrl: ' },
       // styleUrl: 'path/filename'
-      {
-        regex: `(styleUrl:\\s*)(['"\`])([^'"\`]*[/\\\\])?${escapedFileName}(['"\`])`,
-        prefix: 'styleUrl: '
-      },
+      { regex: /(styleUrl:\s*)(['"`])([^'"`]*[/\\])?([^'"`/\\]+)(['"`])/, prefix: 'styleUrl: ' },
       // styleUrls array: ['path/filename']
-      {
-        regex: `(styleUrls:\\s*\\[[^\\]]*?)(['"\`])([^'"\`]*[/\\\\])?${escapedFileName}(['"\`])`,
-        prefix: 'styleUrls: ['
-      }
+      { regex: /(styleUrls:\s*\[[^\]]*?)(['"`])([^'"`]*[/\\])?([^'"`/\\]+)(['"`])/, prefix: 'styleUrls: [' }
     ];
 
-    return patterns;
+    for (const pattern of patterns) {
+      const regex = new RegExp(pattern.regex, 'g');
+      let match;
+
+      while ((match = regex.exec(content)) !== null) {
+        importMatches.push({
+          index: match.index,
+          fullMatch: match[0],
+          prefix: match[1],
+          openQuote: match[2],
+          pathPrefix: match[3] || '',
+          fileName: match[4],
+          closeQuote: match[5]
+        });
+      }
+    }
+
+    // Sort by index in descending order for safe replacement
+    return importMatches.sort((a, b) => b.index - a.index);
+  }
+
+  /**
+   * Removes overlapping import matches to prevent string replacement corruption
+   */
+  private removeOverlappingMatches(
+    matches: Array<{
+      index: number;
+      fullMatch: string;
+      prefix: string;
+      openQuote: string;
+      pathPrefix: string;
+      fileName: string;
+      closeQuote: string;
+    }>
+  ): typeof matches {
+    // Sort by index to process overlaps correctly
+    const sorted = [...matches].sort((a, b) => a.index - b.index);
+    const unique: typeof matches = [];
+
+    for (const match of sorted) {
+      const endIndex = match.index + match.fullMatch.length;
+
+      // Check if this match overlaps with any already accepted match
+      const hasOverlap = unique.some(existing => {
+        const existingEnd = existing.index + existing.fullMatch.length;
+        return match.index < existingEnd && endIndex > existing.index;
+      });
+
+      if (!hasOverlap) {
+        unique.push(match);
+      }
+    }
+
+    return unique;
+  }
+
+  /**
+   * Finds the best mapping for an import statement based on specificity and context
+   */
+  private findBestMapping(
+    importMatch: { fileName: string; pathPrefix: string },
+    pathMap: Map<string, string>,
+    currentFilePath: string
+  ): { newFileName: string } | null {
+    const candidates: Array<{
+      mapping: [string, string];
+      score: number;
+      newFileName: string;
+    }> = [];
+
+    // Evaluate all potential mappings
+    for (const [oldPath, newPath] of pathMap) {
+      const oldFileName = basename(oldPath);
+      const newFileName = basename(newPath);
+      const oldFileNameNoExt = this.removeExtension(oldFileName);
+      const newFileNameNoExt = this.removeExtension(newFileName);
+
+      // Check if this mapping could match the import
+      let score = 0;
+      let matchedFileName = '';
+
+      // Exact filename match (with extension) - highest priority
+      if (importMatch.fileName === oldFileName) {
+        score = 1000;
+        matchedFileName = newFileName;
+      }
+      // Exact filename match (without extension) - high priority
+      else if (importMatch.fileName === oldFileNameNoExt) {
+        score = 500;
+        matchedFileName = newFileNameNoExt;
+      }
+      // Skip if no match
+      else {
+        continue;
+      }
+
+      // Bonus points for more specific mappings
+      // Prefer mappings where the old file has a more specific name (longer base name)
+      score += oldFileNameNoExt.length;
+
+      // Bonus points if the old path is closer to the current file (same directory)
+      const oldDir = dirname(resolve(oldPath));
+      const currentDir = dirname(resolve(currentFilePath));
+      if (oldDir === currentDir) {
+        score += 100;
+      }
+
+      // Penalty for mappings that would create circular references
+      const newFileNameNoExt2 = this.removeExtension(matchedFileName);
+      const currentFileNameNoExt = this.removeExtension(basename(currentFilePath));
+      if (newFileNameNoExt2 === currentFileNameNoExt) {
+        score -= 10000; // Heavy penalty to avoid self-references
+      }
+
+      candidates.push({
+        mapping: [oldPath, newPath],
+        score,
+        newFileName: matchedFileName
+      });
+    }
+
+    // Return the highest scoring candidate
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    candidates.sort((a, b) => b.score - a.score);
+    return { newFileName: candidates[0].newFileName };
   }
 
   /**
